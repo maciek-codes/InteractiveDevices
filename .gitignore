@@ -1,0 +1,5 @@
+KinectWPFOpenCV/bin/
+KinectWPFOpenCV/obj/
+
+# Ignore solution user file
+*.suo
