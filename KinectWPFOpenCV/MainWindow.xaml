@@ -46,16 +46,16 @@
             
             <StackPanel  Margin="0 0 15 15" Width="300" Background="#f0f0f0" HorizontalAlignment="Right" Grid.Column="2" Grid.Row="1" >
                 <TextBlock Text="Settings"  Padding="10" Background="#ccc" />
-                <TextBlock Text="Min Distance" Padding="10"/>
+                <TextBlock Text="Min Threshold" Padding="10"/>
                 <StackPanel  Orientation="Horizontal">
-                    <Slider Width="250"  Minimum="300" Value="600"  Maximum="900" TickFrequency="1" IsSnapToTickEnabled="True" Interval="1" Margin="5"  x:Name="sliderMin" Padding="10"/>
-                    <TextBlock Text="{Binding Value, ElementName=sliderMin}" VerticalAlignment="Center" />
+                    <Slider Width="250"  Minimum="0" Value="127"  Maximum="255" TickFrequency="1" IsSnapToTickEnabled="True" Interval="1" Margin="5"  x:Name="sliderThresholdMin" Padding="10"/>
+                    <TextBlock Text="{Binding Value, ElementName=sliderThresholdMin}" VerticalAlignment="Center" />
                 </StackPanel>
 
-                <TextBlock Text="Max Distance" Padding="10"/>
+                <TextBlock Text="Max Threshold" Padding="10"/>
                 <StackPanel Orientation="Horizontal">
-                    <Slider Width="250" Minimum="900" Value="900" Maximum="6000" Margin="5" x:Name="sliderMax" Padding="10"/>
-                    <TextBlock Text="{Binding Value, ElementName=sliderMax}" VerticalAlignment="Center" />
+                    <Slider Width="250" Minimum="0" Value="255" Maximum="255" Margin="5" x:Name="sliderThresholdMax" Padding="10"/>
+                    <TextBlock Text="{Binding Value, ElementName=sliderThresholdMax}" VerticalAlignment="Center" />
                 </StackPanel>
 
                 <TextBlock Text="Min Blob Size" Padding="10"/>

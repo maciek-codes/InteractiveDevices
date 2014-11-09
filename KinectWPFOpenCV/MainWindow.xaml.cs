@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -135,15 +136,42 @@ namespace Origami
                 {
                     colorFrame.CopyPixelDataTo(this.colorPixels);
 
-                    var openCvImg = new Image<Bgr, byte>(colorBitmap.ToBitmap());
+                    var openCvImg = new Image<Gray, byte>(colorBitmap.ToBitmap());
+
+                    this.colorBitmap.WritePixels(
+                      new Int32Rect(0, 0, this.colorBitmap.PixelWidth, this.colorBitmap.PixelHeight),
+                      this.colorPixels,
+                      this.colorBitmap.PixelWidth * sizeof(int),
+                      0);
+
+                    // Get threshold value
+                    var thresholdMin = Convert.ToInt32(sliderThresholdMin.Value);
+                    var thresholdMax = Convert.ToInt32(sliderThresholdMax.Value);
+
+                    // Thresholding
+                    var thresholdImage = openCvImg.ThresholdBinary(new Gray(thresholdMin), new Gray(thresholdMax));
+
+                    #region Extracting the Contours
+                    using (var storage = new MemStorage())
+                    {
+                        var contours = thresholdImage.FindContours(Emgu.CV.CvEnum.CHAIN_APPROX_METHOD.CV_CHAIN_APPROX_SIMPLE, Emgu.CV.CvEnum.RETR_TYPE.CV_RETR_TREE, storage);
+                        for (;contours != null; contours = contours.HNext)
+                        {
+
+                            var currentContour = contours.ApproxPoly(contours.Perimeter * 0.015, storage);
+                            if (currentContour.BoundingRectangle.Width > 20)
+                            {
+                                CvInvoke.cvDrawContours(openCvImg, contours, new MCvScalar(126), new MCvScalar(126), -1, 2, Emgu.CV.CvEnum.LINE_TYPE.EIGHT_CONNECTED, new System.Drawing.Point(0,0));
+                                //openCvImg.Draw(currentContour.BoundingRectangle, new Gray(255), 5);
+                            }
+                        }
+
+                    }
+                    #endregion
 
                     this.outImg.Source = ImageHelpers.ToBitmapSource(openCvImg);
 
-                    this.colorBitmap.WritePixels(
-                        new Int32Rect(0, 0, this.colorBitmap.PixelWidth, this.colorBitmap.PixelHeight),
-                        this.colorPixels,
-                        this.colorBitmap.PixelWidth * sizeof(int),
-                        0);
+          
                     
                 }
             }
