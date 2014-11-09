@@ -18,9 +18,9 @@ namespace Origami
     public partial class MainWindow : Window
     {
         KinectSensor sensor;
-        WriteableBitmap depthBitmap;
+        //WriteableBitmap depthBitmap;
         WriteableBitmap colorBitmap;
-        DepthImagePixel[] depthPixels;
+        //DepthImagePixel[] depthPixels;
         byte[] colorPixels;
 
         int blobCount = 0;
@@ -54,12 +54,12 @@ namespace Origami
             if (null != this.sensor)
             {
 
-                this.sensor.DepthStream.Enable(DepthImageFormat.Resolution640x480Fps30);
+                //this.sensor.DepthStream.Enable(DepthImageFormat.Resolution640x480Fps30);
                 this.sensor.ColorStream.Enable(ColorImageFormat.RgbResolution640x480Fps30);
                 this.colorPixels = new byte[this.sensor.ColorStream.FramePixelDataLength];
-                this.depthPixels = new DepthImagePixel[this.sensor.DepthStream.FramePixelDataLength];
+                //this.depthPixels = new DepthImagePixel[this.sensor.DepthStream.FramePixelDataLength];
                 this.colorBitmap = new WriteableBitmap(this.sensor.ColorStream.FrameWidth, this.sensor.ColorStream.FrameHeight, 96.0, 96.0, PixelFormats.Bgr32, null);
-                this.depthBitmap = new WriteableBitmap(this.sensor.DepthStream.FrameWidth, this.sensor.DepthStream.FrameHeight, 96.0, 96.0, PixelFormats.Bgr32, null);                
+                //this.depthBitmap = new WriteableBitmap(this.sensor.DepthStream.FrameWidth, this.sensor.DepthStream.FrameHeight, 96.0, 96.0, PixelFormats.Bgr32, null);                
                 this.colorImg.Source = this.colorBitmap;
 
                 this.sensor.AllFramesReady += this.sensor_AllFramesReady;
@@ -86,18 +86,19 @@ namespace Origami
 
         private void sensor_AllFramesReady(object sender, AllFramesReadyEventArgs e)
         {
-            BitmapSource depthBmp = null;
+            BitmapSource watershed = null;
             blobCount = 0;
 
-            using (ColorImageFrame colorFrame = e.OpenColorImageFrame())
+            using (var colorFrame = e.OpenColorImageFrame())
             {
+
+                /*
                 using (DepthImageFrame depthFrame = e.OpenDepthImageFrame())
                 {
                     if (depthFrame != null)
                     {
 
                         blobCount = 0;
-
                         depthBmp = depthFrame.SliceDepthImage((int)sliderMin.Value, (int)sliderMax.Value);
                         
                         Image<Bgr, Byte> openCVImg = new Image<Bgr, byte>(depthBmp.ToBitmap());
@@ -125,20 +126,24 @@ namespace Origami
                         }
 
                         this.outImg.Source = ImageHelpers.ToBitmapSource(openCVImg);                        
-                        txtBlobCount.Text = blobCount.ToString();
+                        //txtBlobCount.Text = blobCount.ToString();
                     }
-                }
+                }*/
 
 
                 if (colorFrame != null)
                 {
-                    
-                      colorFrame.CopyPixelDataTo(this.colorPixels);
-                      this.colorBitmap.WritePixels(
-                          new Int32Rect(0, 0, this.colorBitmap.PixelWidth, this.colorBitmap.PixelHeight),
-                          this.colorPixels,
-                          this.colorBitmap.PixelWidth * sizeof(int),
-                          0);
+                    colorFrame.CopyPixelDataTo(this.colorPixels);
+
+                    var openCvImg = new Image<Bgr, byte>(colorBitmap.ToBitmap());
+
+                    this.outImg.Source = ImageHelpers.ToBitmapSource(openCvImg);
+
+                    this.colorBitmap.WritePixels(
+                        new Int32Rect(0, 0, this.colorBitmap.PixelWidth, this.colorBitmap.PixelHeight),
+                        this.colorPixels,
+                        this.colorBitmap.PixelWidth * sizeof(int),
+                        0);
                     
                 }
             }
@@ -148,7 +153,7 @@ namespace Origami
         #region Window Stuff
         void MainWindow_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            this.DragMove();
+           // this.DragMove();
         }
 
 
