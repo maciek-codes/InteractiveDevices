@@ -7,8 +7,8 @@
     <ProjectGuid>{FAAF3EC7-7164-4FFE-B1BE-21235262AE07}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>KinectWPFOpenCV</RootNamespace>
-    <AssemblyName>KinectWPFOpenCV</AssemblyName>
+    <RootNamespace>Origami</RootNamespace>
+    <AssemblyName>Origami</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -119,6 +119,12 @@
     <Content Include="opencv_imgproc231.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WPF_Rendering\InteractiveDevices1\Utilities.csproj">
+      <Project>{9d8b9849-e68b-40f9-9941-ac08c2aee03d}</Project>
+      <Name>Utilities</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
