@@ -31,15 +31,15 @@
                     <RowDefinition />
                 </Grid.RowDefinitions>
                 <!-- Kinnect view box -->
-                <Viewbox Grid.Row="0" x:Name="outputViewbox">            
+                <Viewbox Grid.Row="0" x:Name="outputViewbox" Stretch="Uniform">            
                           <Image Name="outImg" Width="640" Height="480" RenderTransformOrigin="0.5,0.5" />                                                                                  
                 </Viewbox>
-                
-                <!-- Our canvas -->
-                <Canvas Grid.Row="1" Background="Black">
-                    <Rectangle Fill="Red" Width="100" Height="100"></Rectangle>
-                    <Rectangle Fill="Blue" Width="100" Height="100" Canvas.Left="200" Canvas.Top="20"></Rectangle>
-                </Canvas>
+
+                <!-- Image to projector -->
+                <Viewbox Grid.Row="1" x:Name="projectorViewbox" Stretch="Uniform">
+                    <Image Name="projectorImage" Width="640" Height="480" RenderTransformOrigin="0.5,0.5" />
+                </Viewbox>
+
             </Grid>
 
             <Image Name="colorImg" Width="160" Height="120" Grid.Row="1" Grid.ColumnSpan="2" Stretch="Uniform" RenderTransformOrigin="0.5,0.5" Margin="0 2 12 0" HorizontalAlignment="Right" VerticalAlignment="Top" />

@@ -1,22 +1,21 @@
-﻿using System;
-using System.Drawing;
-using System.Windows;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using KinectWPFOpenCV;
-using Microsoft.Kinect;
-using Emgu.CV;
-using Emgu.CV.Structure;
-using System.IO;
-using Origami.Utiities;
-
-namespace Origami
+﻿namespace Origami
 {
+    using System;
+    using System.Windows;
+    using System.Windows.Input;
+    using System.Windows.Media;
+    using System.Windows.Media.Imaging;
+    using KinectWPFOpenCV;
+    using Microsoft.Kinect;
+    using Emgu.CV;
+    using Emgu.CV.Structure;
+    using System.IO;
+    using Utiities;
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         KinectSensor sensor;
         //WriteableBitmap depthBitmap;
@@ -24,15 +23,13 @@ namespace Origami
         //DepthImagePixel[] depthPixels;
         byte[] colorPixels;
 
-        int blobCount = 0;
-
         public MainWindow()
         {
             InitializeComponent();
            
-            this.Loaded += MainWindow_Loaded;
-            this.Closing += MainWindow_Closing;
-            this.MouseDown += MainWindow_MouseDown;
+            Loaded += MainWindow_Loaded;
+            Closing += MainWindow_Closing;
+            MouseDown += MainWindow_MouseDown;
 
             WindowUtilities.MaximizeWindow(this);
 
@@ -63,7 +60,7 @@ namespace Origami
                 //this.depthBitmap = new WriteableBitmap(this.sensor.DepthStream.FrameWidth, this.sensor.DepthStream.FrameHeight, 96.0, 96.0, PixelFormats.Bgr32, null);                
                 this.colorImg.Source = this.colorBitmap;
 
-                this.sensor.AllFramesReady += this.sensor_AllFramesReady;
+                this.sensor.AllFramesReady += sensor_AllFramesReady;
 
                 try
                 {
@@ -75,21 +72,16 @@ namespace Origami
                 }
             }
 
-            if (null == this.sensor)
-            {
-                this.outputViewbox.Visibility = System.Windows.Visibility.Collapsed;
-                this.txtError.Visibility = System.Windows.Visibility.Visible;
-                this.txtInfo.Text = "No Kinect Found";
-                
-            }
+            if (null != this.sensor) 
+                return;
 
+            this.outputViewbox.Visibility = Visibility.Collapsed;
+            this.txtError.Visibility = Visibility.Visible;
+            this.txtInfo.Text = "No Kinect Found";
         }
 
         private void sensor_AllFramesReady(object sender, AllFramesReadyEventArgs e)
         {
-            BitmapSource watershed = null;
-            blobCount = 0;
-
             using (var colorFrame = e.OpenColorImageFrame())
             {
 
@@ -136,43 +128,50 @@ namespace Origami
                 {
                     colorFrame.CopyPixelDataTo(this.colorPixels);
 
-                    var openCvImg = new Image<Gray, byte>(colorBitmap.ToBitmap());
-
-                    this.colorBitmap.WritePixels(
-                      new Int32Rect(0, 0, this.colorBitmap.PixelWidth, this.colorBitmap.PixelHeight),
-                      this.colorPixels,
-                      this.colorBitmap.PixelWidth * sizeof(int),
-                      0);
+                    var openCvImgGrayscale = new Image<Gray, byte>(colorBitmap.ToBitmap());
+                    var openCvImgColour = new Image<Bgr, byte>(colorBitmap.ToBitmap());
+                    
+ 
 
                     // Get threshold value
                     var thresholdMin = Convert.ToInt32(sliderThresholdMin.Value);
                     var thresholdMax = Convert.ToInt32(sliderThresholdMax.Value);
 
                     // Thresholding
-                    var thresholdImage = openCvImg.ThresholdBinary(new Gray(thresholdMin), new Gray(thresholdMax));
+                    var thresholdImage = openCvImgGrayscale.ThresholdBinary(new Gray(thresholdMin), new Gray(thresholdMax));
 
                     #region Extracting the Contours
                     using (var storage = new MemStorage())
                     {
-                        var contours = thresholdImage.FindContours(Emgu.CV.CvEnum.CHAIN_APPROX_METHOD.CV_CHAIN_APPROX_SIMPLE, Emgu.CV.CvEnum.RETR_TYPE.CV_RETR_TREE, storage);
+                        // Find contours
+                        var contours = thresholdImage.FindContours(
+                            Emgu.CV.CvEnum.CHAIN_APPROX_METHOD.CV_CHAIN_APPROX_SIMPLE, 
+                            Emgu.CV.CvEnum.RETR_TYPE.CV_RETR_TREE, 
+                            storage);
+
                         for (;contours != null; contours = contours.HNext)
                         {
 
+                            // Draw contours we found
                             var currentContour = contours.ApproxPoly(contours.Perimeter * 0.015, storage);
                             if (currentContour.BoundingRectangle.Width > 20)
                             {
-                                CvInvoke.cvDrawContours(openCvImg, contours, new MCvScalar(126), new MCvScalar(126), -1, 2, Emgu.CV.CvEnum.LINE_TYPE.EIGHT_CONNECTED, new System.Drawing.Point(0,0));
-                                //openCvImg.Draw(currentContour.BoundingRectangle, new Gray(255), 5);
+                                CvInvoke.cvDrawContours(openCvImgColour, contours, new MCvScalar(0, 0, 255), new MCvScalar(0, 0, 255), -1, 2, Emgu.CV.CvEnum.LINE_TYPE.EIGHT_CONNECTED, new System.Drawing.Point(0, 0));
                             }
                         }
-
                     }
+
                     #endregion
 
-                    this.outImg.Source = ImageHelpers.ToBitmapSource(openCvImg);
+                    this.outImg.Source = ImageHelpers.ToBitmapSource(thresholdImage);
+                    this.projectorImage.Source = ImageHelpers.ToBitmapSource(openCvImgColour);
 
-          
-                    
+                    // Copy pixels to small color bitmap
+                    this.colorBitmap.WritePixels(
+                      new Int32Rect(0, 0, this.colorBitmap.PixelWidth, this.colorBitmap.PixelHeight),
+                      this.colorPixels,
+                      this.colorBitmap.PixelWidth * sizeof(int),
+                      0);
                 }
             }
         }
@@ -195,7 +194,7 @@ namespace Origami
 
         private void CloseBtnClick(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            Close();
         }
         #endregion
     }
