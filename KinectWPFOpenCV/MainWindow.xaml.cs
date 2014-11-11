@@ -11,6 +11,9 @@
     using Emgu.CV.Structure;
     using System.IO;
     using Utiities;
+    using SharpGL;
+    using SharpGL.SceneGraph;
+    using SharpGL.Enumerations;
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -175,6 +178,53 @@
                 }
             }
         }
+
+        #region OpenGl
+
+        private float rotatePyramid = 0.0f;
+
+        private void OpenGLControl_OpenGLInitialized(object sender, OpenGLEventArgs args)
+        {
+            //  Enable the OpenGL depth testing functionality.
+            args.OpenGL.Enable(OpenGL.GL_DEPTH_TEST);
+        }
+
+        private void OpenGLControl_OpenGLDraw(object sender, OpenGLEventArgs args)
+        {
+            OpenGL gl = args.OpenGL;
+
+            //  Clear the color and depth buffers.
+            gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
+            int GridSizeX = 16;
+	        int GridSizeY = 16;
+	        int SizeX = 8;
+	        int SizeY = 8;
+ 
+	        gl.MatrixMode(MatrixMode.Modelview);
+	        gl.LoadIdentity();
+ 
+	        gl.MatrixMode(SharpGL.Enumerations.MatrixMode.Projection);
+	        gl.LoadIdentity();
+	        gl.Ortho(0,GridSizeX*SizeX,0,GridSizeY*SizeY,-1.0,1.0);
+ 
+	        gl.Begin(SharpGL.Enumerations.BeginMode.Quads);
+	        for (int x =0;x<GridSizeX;++x)
+		        for (int y =0;y<GridSizeY;++y)
+		        {
+                    if ((x + y) < 0x00000001) //modulo 2
+				        gl.Color(1.0f,1.0f,1.0f); //white
+			        else
+				        gl.Color(0.0f,0.0f,0.0f); //black
+ 
+			        gl.Vertex(    x*SizeX,    y*SizeY);
+			        gl.Vertex((x+1)*SizeX,    y*SizeY);
+			        gl.Vertex((x+1)*SizeX,(y+1)*SizeY);
+			        gl.Vertex(    x*SizeX,(y+1)*SizeY);
+ 
+		        }
+	        gl.End();
+        }
+        #endregion
 
 
         #region Window Stuff

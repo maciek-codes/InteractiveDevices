@@ -1,6 +1,7 @@
 ﻿<Window x:Class="Origami.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sharpGL="clr-namespace:SharpGL.WPF;assembly=SharpGL.WPF"
         Title="MainWindow" Width="850" Height="575" WindowStyle="None" AllowsTransparency="True">
     <Border BorderBrush="#00bcf2" BorderThickness="1" >
         <Grid>
@@ -29,13 +30,19 @@
                 <Grid.RowDefinitions>
                     <RowDefinition /> 
                     <RowDefinition />
+                    <RowDefinition />
                 </Grid.RowDefinitions>
                 <!-- Kinnect view box -->
                 <Viewbox Grid.Row="0" x:Name="outputViewbox" Stretch="Uniform">            
                           <Image Name="outImg" Width="640" Height="480" RenderTransformOrigin="0.5,0.5" />                                                                                  
                 </Viewbox>
 
-                <!-- Image to projector -->
+                <sharpGL:OpenGLControl Grid.Row="2" 
+                                       OpenGLDraw="OpenGLControl_OpenGLDraw"
+                                       OpenGLInitialized="OpenGLControl_OpenGLInitialized"
+                                       DrawFPS="True" />
+
+                    <!-- Image to projector -->
                 <Viewbox Grid.Row="1" x:Name="projectorViewbox" Stretch="Uniform">
                     <Image Name="projectorImage" Width="640" Height="480" RenderTransformOrigin="0.5,0.5" />
                 </Viewbox>
