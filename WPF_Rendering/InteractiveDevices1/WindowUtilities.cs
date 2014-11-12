@@ -13,7 +13,7 @@ namespace Origami.Utiities
         public static void MaximizeWindow(Window window)
         {
             Debug.Write(Screen.AllScreens.Length);
-            var secondaryScreen = Screen.AllScreens[0];
+            var secondaryScreen = Screen.AllScreens[Screen.AllScreens.Length - 1];
             //Screen secondaryScreen = Screen.AllScreens.Where(s => !s.Primary).FirstOrDefault();
             //Screen.AllScreens[1];
             

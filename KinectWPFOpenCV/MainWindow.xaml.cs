@@ -14,6 +14,7 @@
     using SharpGL;
     using SharpGL.SceneGraph;
     using SharpGL.Enumerations;
+    using SharpGL.WPF;
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -26,6 +27,9 @@
         //DepthImagePixel[] depthPixels;
         byte[] colorPixels;
 
+
+        Window projectorWindow = new Window();
+        OpenGLControl openGlControl = new OpenGLControl();
         public MainWindow()
         {
             InitializeComponent();
@@ -34,7 +38,15 @@
             Closing += MainWindow_Closing;
             MouseDown += MainWindow_MouseDown;
 
-            WindowUtilities.MaximizeWindow(this);
+            openGlControl.OpenGLInitialized += OpenGLControl_OpenGLInitialized;
+            openGlControl.OpenGLDraw += OpenGLControl_OpenGLDraw;
+            openGlControl.DrawFPS = true;
+
+            // Set up window for projector
+            projectorWindow.WindowStyle = System.Windows.WindowStyle.None;
+            projectorWindow.Content = openGlControl;
+            projectorWindow.Show();
+            WindowUtilities.MaximizeWindow(projectorWindow);
 
         }
 
@@ -195,35 +207,44 @@
 
             //  Clear the color and depth buffers.
             gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
-            int GridSizeX = 16;
-	        int GridSizeY = 16;
-	        int SizeX = 8;
-	        int SizeY = 8;
+            int GridSizeX = 8;
+	        int GridSizeY = 8;
+	        int SizeX = 16;
+	        int SizeY = 16;
  
 	        gl.MatrixMode(MatrixMode.Modelview);
 	        gl.LoadIdentity();
  
 	        gl.MatrixMode(SharpGL.Enumerations.MatrixMode.Projection);
 	        gl.LoadIdentity();
-	        gl.Ortho(0,GridSizeX*SizeX,0,GridSizeY*SizeY,-1.0,1.0);
+	        gl.Ortho(0,                           // left
+                SizeX * GridSizeX,              // right
+                0,                                // bottom
+                SizeY * GridSizeY,              // top
+                0.0, // near
+                1.0);
  
 	        gl.Begin(SharpGL.Enumerations.BeginMode.Quads);
-	        for (int x =0;x<GridSizeX;++x)
-		        for (int y =0;y<GridSizeY;++y)
-		        {
-                    if ((x + y) < 0x00000001) //modulo 2
-				        gl.Color(1.0f,1.0f,1.0f); //white
-			        else
-				        gl.Color(0.0f,0.0f,0.0f); //black
- 
-			        gl.Vertex(    x*SizeX,    y*SizeY);
-			        gl.Vertex((x+1)*SizeX,    y*SizeY);
-			        gl.Vertex((x+1)*SizeX,(y+1)*SizeY);
-			        gl.Vertex(    x*SizeX,(y+1)*SizeY);
- 
-		        }
+
+            for (int x = 0; x < GridSizeX; ++x)
+            {
+                for (int y = 0; y < GridSizeY; ++y)
+                {
+                    if (((x + y) & 0x1) == 0x1) //modulo 2
+                        gl.Color(1.0f, 1.0f, 1.0f); //white
+                    else
+                        gl.Color(0.0f, 0.0f, 0.0f); //black
+
+                    gl.Vertex(x * SizeX, y * SizeY);
+                    gl.Vertex((x + 1) * SizeX, y * SizeY);
+                    gl.Vertex((x + 1) * SizeX, (y + 1) * SizeY);
+                    gl.Vertex(x * SizeX, (y + 1) * SizeY);
+
+                }
+            }
 	        gl.End();
         }
+
         #endregion
 
 
