@@ -121,6 +121,15 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\Status.png" />
+    <Content Include="Emgu.CV.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Emgu.CV.UI.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Emgu.Util.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="opencv_core231.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
