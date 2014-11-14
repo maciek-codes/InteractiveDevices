@@ -4,3 +4,4 @@ KinectWPFOpenCV/obj/
 # Ignore solution user file
 *.suo
 *csproj.user
+packages/

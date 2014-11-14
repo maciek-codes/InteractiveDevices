@@ -261,6 +261,7 @@
             {
                 this.sensor.Stop();
             }
+            this.projectorWindow.Close();
         }
 
         private void CloseBtnClick(object sender, RoutedEventArgs e)
