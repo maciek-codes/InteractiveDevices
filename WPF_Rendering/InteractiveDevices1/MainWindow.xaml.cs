@@ -14,8 +14,6 @@
     {
         public MainWindow()
         {
-            WindowUtilities.MaximizeWindow(this);
-
             InitializeComponent();
             //PointCollection myPC = new PointCollection();
             //myPC.Add(new Point(100, 100));

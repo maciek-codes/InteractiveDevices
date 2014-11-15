@@ -10,31 +10,34 @@ namespace Origami.Utiities
     static public class WindowUtilities
     {
 
-        public static void MaximizeWindow(Window window)
+        public static Screen GetSecondScreen()
         {
-            Debug.Write(Screen.AllScreens.Length);
-            var secondaryScreen = Screen.AllScreens[Screen.AllScreens.Length - 1];
-            //Screen secondaryScreen = Screen.AllScreens.Where(s => !s.Primary).FirstOrDefault();
-            //Screen.AllScreens[1];
-            
-            if (secondaryScreen == null) 
-                return;
+            var secondaryScreen = Screen.PrimaryScreen;
 
-            if (!window.IsLoaded)
+            foreach (var screen in Screen.AllScreens)
             {
-                window.WindowStartupLocation = WindowStartupLocation.Manual;
+                if (screen.Equals(Screen.PrimaryScreen))
+                    continue;
+                secondaryScreen = screen;
+                break;
             }
-            
-            var workingArea = secondaryScreen.WorkingArea;
-            window.Left = workingArea.Left;
-            window.Top = workingArea.Top;
-            window.Width = workingArea.Width;
-            window.Height = workingArea.Height;
-            
-            if (window.IsLoaded)
-            {
+            return secondaryScreen;
+        }
+
+        public static void ShowOnMonitor(int monitor, Window window)
+        {
+            Screen[] screens = Screen.AllScreens;
+
+            window.WindowStyle = WindowStyle.None;
+            window.WindowStartupLocation = WindowStartupLocation.Manual;
+
+            window.Left = screens[monitor].Bounds.Left;
+            window.Top = screens[monitor].Bounds.Top;
+
+            window.SourceInitialized += (snd, arg) =>
                 window.WindowState = WindowState.Maximized;
-            }
+
+            window.Show();
         }
 
         public static void SetCanvasAsWindowRoot(Window window, Canvas canvas)
