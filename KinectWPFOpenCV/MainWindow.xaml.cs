@@ -38,9 +38,8 @@ namespace Origami
 
 	    private PointF[] objectPoints; 
 
-	    private MCvPoint3D32f[][] imagePoints = new MCvPoint3D32f[7][];
-        
-        private Size calibImageSize = new Size(7, 7);
+	    private MCvPoint3D32f[][] imagePoints = new MCvPoint3D32f[1][];
+       
 
 	    public MainWindow()
 	    {
@@ -60,11 +59,7 @@ namespace Origami
 	        projectorWindow.Loaded += projectorWindow_Loaded;
 	        WindowUtilities.ShowOnMonitor(1, projectorWindow);
 
-            // Initialize the array of object points
-	        for (int i = 0; i < 7; i++)
-	        {
-	            this.imagePoints[i] = new MCvPoint3D32f[7];
-	        }
+            this.imagePoints[0] = new MCvPoint3D32f[49];
 
 	    }
 
@@ -91,7 +86,6 @@ namespace Origami
 
 			if (null != this.sensor)
 			{
-
 				//this.sensor.DepthStream.Enable(DepthImageFormat.Resolution640x480Fps30);
 				this.sensor.ColorStream.Enable(ColorImageFormat.RgbResolution640x480Fps30);
 				this.colorPixels = new byte[this.sensor.ColorStream.FramePixelDataLength];
@@ -297,7 +291,7 @@ namespace Origami
 
 				    if (x < GridSizeX - 1 && y < GridSizeY - 1)
 				    {
-				        this.imagePoints[x][y] = new MCvPoint3D32f((x + 1)*SizeX, (y + 1)*SizeY, 0);
+				        this.imagePoints[0][x*y] = new MCvPoint3D32f((x + 1)*SizeX, (y + 1)*SizeY, 0);
 				    }
 
 				}
@@ -353,20 +347,12 @@ namespace Origami
                 this.projectorImage.Source = ImageHelpers.ToBitmapSource(subColSection);
 
                 // Re-shape result array
-                PointF[][] imagePoints = new PointF[7][];
+                PointF[][] objectPointsFrames = new PointF[1][];
+                objectPointsFrames[0] = objectPoints;
 
-                for (int i = 0; i < 7; i++)
-                {
-                    imagePoints[i] = new PointF[7];
-
-                    for (int j = 0; j < 7; j++)
-                    {
-                        imagePoints[i][j] = this.objectPoints[i * j];
-                    }
-                }
 
                 ExtrinsicCameraParameters[] extrinsicPoints;
-                CameraCalibration.CalibrateCamera(this.imagePoints, imagePoints, subSection.Size, new IntrinsicCameraParameters(),
+                CameraCalibration.CalibrateCamera(this.imagePoints, objectPointsFrames, subSection.Size, new IntrinsicCameraParameters(),
                     CALIB_TYPE.DEFAULT, out extrinsicPoints);
 
 
