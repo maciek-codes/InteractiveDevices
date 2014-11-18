@@ -1,3 +1,7 @@
+using System;
+using System.Windows.Interop;
+using NativeHelpers;
+
 namespace Origami.Utiities
 {
     using System.Diagnostics;
@@ -28,11 +32,17 @@ namespace Origami.Utiities
         {
             Screen[] screens = Screen.AllScreens;
 
+            IntPtr windowHandle = new WindowInteropHelper(window).Handle;
+
+            const double baseDpi = 96.0;
+
+            double currentDpi = PerMonitorDPIHelper.GetDpiForWindow(windowHandle);
+
             window.WindowStyle = WindowStyle.None;
             window.WindowStartupLocation = WindowStartupLocation.Manual;
 
-            window.Left = screens[monitor].Bounds.Left;
-            window.Top = screens[monitor].Bounds.Top;
+            window.Left = screens[monitor].Bounds.Left * baseDpi / currentDpi;
+            window.Top = screens[monitor].Bounds.Top * baseDpi / currentDpi;
 
             window.SourceInitialized += (snd, arg) =>
                 window.WindowState = WindowState.Maximized;

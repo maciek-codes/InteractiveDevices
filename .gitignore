@@ -5,3 +5,11 @@ KinectWPFOpenCV/obj/
 *.suo
 *csproj.user
 packages/
+Debug/
+ipch/
+*.sdf
+*.opensdf
+
+# C++ project stuff
+*.vcxproj.filters
+*.vcxproj.vspscc

@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Windows.Media.Media3D;
 using Emgu.CV.CvEnum;
+using NativeHelpers;
 
 namespace Origami
 {
@@ -33,12 +34,12 @@ namespace Origami
 		byte[] colorPixels;
 
 
-		Window projectorWindow = new Window();
+        readonly Window projectorWindow = new Window();
 		OpenGLControl openGlControl = new OpenGLControl();
 
 	    private PointF[] objectPoints; 
 
-	    private MCvPoint3D32f[][] imagePoints = new MCvPoint3D32f[1][];
+	    private readonly MCvPoint3D32f[][] imagePoints = new MCvPoint3D32f[1][];
        
 
 	    public MainWindow()

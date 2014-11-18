@@ -1,6 +1,7 @@
-﻿<Window x:Class="Origami.MainWindow"
+﻿<src:PerMonitorDPIWindow x:Class="Origami.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:src="clr-namespace:NativeHelpers;assembly=NativeHelpers"
         xmlns:sharpGL="clr-namespace:SharpGL.WPF;assembly=SharpGL.WPF"
         Title="MainWindow" Width="850" Height="575" WindowStartupLocation="Manual"
         Top="0" Left="0">
@@ -101,4 +102,4 @@
 
         </Grid>
     </Border>
-</Window>
+</src:PerMonitorDPIWindow>
