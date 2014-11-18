@@ -1,8 +1,6 @@
-﻿using System.Diagnostics;
-using System.Drawing;
-using System.Windows.Media.Media3D;
+﻿using System.Drawing;
+using System.Threading.Tasks;
 using Emgu.CV.CvEnum;
-using NativeHelpers;
 
 namespace Origami
 {
@@ -35,12 +33,22 @@ namespace Origami
 
 
         readonly Window projectorWindow = new Window();
-		OpenGLControl openGlControl = new OpenGLControl();
+	    readonly OpenGLControl openGlControl = new OpenGLControl();
 
-	    private PointF[] objectPoints; 
+	    private int calibrationCounter;
+	    private bool isCalibrating;
+	    private const int MaxCalibrationFrames = 2;
 
-	    private readonly MCvPoint3D32f[][] imagePoints = new MCvPoint3D32f[1][];
-       
+	    private readonly PointF[][] objectPointsFrames = new PointF[MaxCalibrationFrames][];
+        private readonly MCvPoint3D32f[][] imagePoints = new MCvPoint3D32f[MaxCalibrationFrames][];
+
+	    private event CalibrationFinishedEvent CalibrationFinished;
+
+        int GridSizeX = 8;
+        int GridSizeY = 8;
+        int SizeX = 16;
+        int SizeY = 16;
+ 
 
 	    public MainWindow()
 	    {
@@ -60,11 +68,35 @@ namespace Origami
 	        projectorWindow.Loaded += projectorWindow_Loaded;
 	        WindowUtilities.ShowOnMonitor(1, projectorWindow);
 
-            this.imagePoints[0] = new MCvPoint3D32f[49];
+	        for (int i = 0; i < MaxCalibrationFrames; i++)
+	        {
+                var rowWidth = GridSizeX - 1;
+                var pointsOnTheImage = new MCvPoint3D32f[rowWidth * rowWidth];
+                // Pre-calculate image points
+                for (int x = 0; x < GridSizeX; ++x)
+                {
+                    for (int y = 0; y < GridSizeY; ++y)
+                    {
+                        if (x < 8 - 1 && y < 8 - 1)
+                        {
+                            pointsOnTheImage[(x * 7) + y] = new MCvPoint3D32f((x + 1) * SizeX, (y + 1) * SizeY, 0);
+                        }
+                    }
+                }
+
+                this.imagePoints[i] = pointsOnTheImage;
+	        }
+
+	        CalibrationFinished += OnCalibrationFinished;
 
 	    }
 
-		void projectorWindow_Loaded(object sender, RoutedEventArgs e)
+	    private void OnCalibrationFinished(object sender, CalibrationFinishedEventArgs args)
+	    {
+	        
+	    }
+
+	    void projectorWindow_Loaded(object sender, RoutedEventArgs e)
 		{
 		    var senderWindow = sender as Window;
 		    if (senderWindow != null) 
@@ -119,51 +151,85 @@ namespace Origami
 		{
 			using (var colorFrame = e.OpenColorImageFrame())
 			{
-				if (colorFrame != null)
-				{
-					colorFrame.CopyPixelDataTo(this.colorPixels);
+			    if (colorFrame != null)
+			    {
+			        colorFrame.CopyPixelDataTo(this.colorPixels);
 
-					
 
-				    var openCvImgColour = new Image<Bgr, byte>(colorBitmap.ToBitmap());
-                    var openCvImgGrayscale = new Image<Gray, byte>(this.colorBitmap.ToBitmap());
 
-                    this.subSection = ExctractSubSection(openCvImgGrayscale);
-				    this.subColSection = ExctractSubSection(openCvImgColour);
+			        var openCvImgColour = new Image<Bgr, byte>(colorBitmap.ToBitmap());
+			        var openCvImgGrayscale = new Image<Gray, byte>(this.colorBitmap.ToBitmap());
 
-					// Get threshold value
-					var thresholdMin = Convert.ToInt32(sliderThresholdMin.Value);
-					var thresholdMax = Convert.ToInt32(sliderThresholdMax.Value);
+			        this.subSection = ExctractSubSection(openCvImgGrayscale);
+			        this.subColSection = ExctractSubSection(openCvImgColour);
 
-					// Thresholding
-                    var thresholdImage = subSection.ThresholdBinary(new Gray(thresholdMin), new Gray(thresholdMax));
+			        // Get threshold value
+			        var thresholdMin = Convert.ToInt32(sliderThresholdMin.Value);
+			        var thresholdMax = Convert.ToInt32(sliderThresholdMax.Value);
 
-                    FindContours(thresholdImage, subColSection);
+			        // Thresholding
+			        var thresholdImage = subSection.ThresholdBinary(new Gray(thresholdMin), new Gray(thresholdMax));
 
-					
-					this.outImg.Source = ImageHelpers.ToBitmapSource(thresholdImage);
+			        FindContours(thresholdImage, subColSection);
 
-				    if (this.objectPoints != null)
-				    {
-				        foreach (var calibPoint in this.objectPoints)
-				        {
-                            this.subColSection.Draw(
-                                new Rectangle(
-                                    Convert.ToInt32(calibPoint.X),
-                                    Convert.ToInt32(calibPoint.Y), 5, 5), 
-                                    new Bgr(System.Drawing.Color.Yellow), 5); 
-				        }
-				        
-				    }
-                    this.projectorImage.Source = ImageHelpers.ToBitmapSource(subColSection);
 
-					// Copy pixels to small color bitmap
-					this.colorBitmap.WritePixels(
-					  new Int32Rect(0, 0, this.colorBitmap.PixelWidth, this.colorBitmap.PixelHeight),
-					  this.colorPixels,
-					  this.colorBitmap.PixelWidth * sizeof(int),
-					  0);
-				}
+			        this.outImg.Source = ImageHelpers.ToBitmapSource(thresholdImage);
+
+			        this.projectorImage.Source = ImageHelpers.ToBitmapSource(subColSection);
+
+			        // Copy pixels to small color bitmap
+			        this.colorBitmap.WritePixels(
+			            new Int32Rect(0, 0, this.colorBitmap.PixelWidth, this.colorBitmap.PixelHeight),
+			            this.colorPixels,
+			            this.colorBitmap.PixelWidth*sizeof (int),
+			            0);
+
+
+
+			        if (isCalibrating)
+			        {
+			            var objectPoints = CameraCalibration.FindChessboardCorners(this.subSection,
+			                new System.Drawing.Size(7, 7),
+			                CALIB_CB_TYPE.ADAPTIVE_THRESH);
+
+                        if (objectPoints != null)
+			            {
+			               
+			                // Put into array
+			                if (calibrationCounter < objectPointsFrames.Length)
+			                {
+			                    objectPointsFrames[calibrationCounter] = objectPoints;
+			                }
+
+			                calibrationCounter++;
+			            }
+
+
+			            if (calibrationCounter >= MaxCalibrationFrames)
+			            {
+                            isCalibrating = false;
+			                calibrationCounter = 0;
+
+                            var size = this.subSection.Size;
+
+			                var calibrateCameraTask = new Task(() =>
+			                {
+			                    ExtrinsicCameraParameters[] extrinsicPoints;
+                                CameraCalibration.CalibrateCamera(this.imagePoints, objectPointsFrames, size,
+			                        new IntrinsicCameraParameters(),
+			                        CALIB_TYPE.DEFAULT, out extrinsicPoints);
+
+			                    if (CalibrationFinished != null)
+			                    {
+			                        CalibrationFinished(this, new CalibrationFinishedEventArgs(extrinsicPoints));
+			                    }
+
+			                });
+
+                            calibrateCameraTask.Start();
+			            }
+			        }
+			    }
 			}
 		}
 
@@ -192,8 +258,8 @@ namespace Origami
 	        {
 	            // Find contours
 	            var contours = thresholdImage.FindContours(
-	                Emgu.CV.CvEnum.CHAIN_APPROX_METHOD.CV_CHAIN_APPROX_SIMPLE,
-	                Emgu.CV.CvEnum.RETR_TYPE.CV_RETR_TREE,
+	                CHAIN_APPROX_METHOD.CV_CHAIN_APPROX_SIMPLE,
+	                RETR_TYPE.CV_RETR_TREE,
 	                storage);
 
 	            for (; contours != null; contours = contours.HNext)
@@ -202,8 +268,13 @@ namespace Origami
 	                var currentContour = contours.ApproxPoly(contours.Perimeter*0.015, storage);
 	                if (currentContour.BoundingRectangle.Width > 20)
 	                {
-	                    CvInvoke.cvDrawContours(subColSection, contours, new MCvScalar(0, 0, 255), new MCvScalar(0, 0, 255), -1,
-	                        2, Emgu.CV.CvEnum.LINE_TYPE.EIGHT_CONNECTED, new System.Drawing.Point(0, 0));
+	                    CvInvoke.cvDrawContours(subColSection, 
+                            contours, 
+                            new MCvScalar(0, 0, 255), 
+                            new MCvScalar(0, 0, 255), -1,
+	                        2, 
+                            LINE_TYPE.EIGHT_CONNECTED, 
+                            new System.Drawing.Point(0, 0));
 	                }
 	            }
 	        }
@@ -211,7 +282,6 @@ namespace Origami
 
 	    #region OpenGl
 
-		private float rotatePyramid = 0.0f;
 	    private Image<Gray, byte> subSection;
 	    private Image<Bgr, byte> subColSection;
 
@@ -228,11 +298,7 @@ namespace Origami
 
 			//  Clear the color and depth buffers.
 			gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
-			int GridSizeX = 8;
-			int GridSizeY = 8;
-			int SizeX = 16;
-			int SizeY = 16;
- 
+
 			gl.MatrixMode(MatrixMode.Modelview);
 			gl.LoadIdentity();
  
@@ -266,15 +332,6 @@ namespace Origami
  
 			gl.Begin(BeginMode.Quads);
 
-            // Draw border 
-
-            //white
-            //gl.Color(1.0f, 1.0f, 1.0f);
-            //gl.Vertex(0, 0);
-            //gl.Vertex(SizeX * GridSizeX + 10, SizeY * GridSizeY + 10);
-            //gl.Vertex(0, SizeY * GridSizeY + 10);
-            //gl.Vertex(SizeX * GridSizeX + 10, 0);
-
 			for (int x = 0; x < GridSizeX; ++x)
 			{
 				for (int y = 0; y < GridSizeY; ++y)
@@ -289,12 +346,6 @@ namespace Origami
 					gl.Vertex((x + 1) * SizeX, y * SizeY);
 					gl.Vertex((x + 1) * SizeX, (y + 1) * SizeY);
 					gl.Vertex(x * SizeX, (y + 1) * SizeY);
-
-				    if (x < GridSizeX - 1 && y < GridSizeY - 1)
-				    {
-				        this.imagePoints[0][x*y] = new MCvPoint3D32f((x + 1)*SizeX, (y + 1)*SizeY, 0);
-				    }
-
 				}
 			}
 			gl.End();
@@ -332,32 +383,28 @@ namespace Origami
         /// <param name="e"></param>
 	    private void OnButtonCalibrateClick(object sender, RoutedEventArgs e)
         {
-            var greyscale = new Image<Gray, byte>(this.colorBitmap.ToBitmap());
-            this.objectPoints = CameraCalibration.FindChessboardCorners(this.subSection,
-                new System.Drawing.Size(7, 7),
-                CALIB_CB_TYPE.ADAPTIVE_THRESH);
-
-            if (this.objectPoints != null)
-            {
-                this.subColSection.Draw(new Rectangle(Convert.ToInt32(this.objectPoints[0].X),
-                    Convert.ToInt32(this.objectPoints[0].Y), 10, 10), new Bgr(System.Drawing.Color.Yellow), 5);
-
-                this.subColSection.Draw(new Rectangle(Convert.ToInt32(this.objectPoints[48].X),
-                   Convert.ToInt32(this.objectPoints[48].Y), 10, 10), new Bgr(System.Drawing.Color.Yellow), 5);
-
-                this.projectorImage.Source = ImageHelpers.ToBitmapSource(subColSection);
-
-                // Re-shape result array
-                PointF[][] objectPointsFrames = new PointF[1][];
-                objectPointsFrames[0] = objectPoints;
-
-
-                ExtrinsicCameraParameters[] extrinsicPoints;
-                CameraCalibration.CalibrateCamera(this.imagePoints, objectPointsFrames, subSection.Size, new IntrinsicCameraParameters(),
-                    CALIB_TYPE.DEFAULT, out extrinsicPoints);
-
-
-            }
+            isCalibrating = true;
         }
 	}
+
+    /// <summary>
+    /// Event when caibration is finished
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="args"></param>
+    internal delegate void CalibrationFinishedEvent(object sender, CalibrationFinishedEventArgs args);
+
+    class CalibrationFinishedEventArgs : EventArgs
+    {
+        /// <summary>
+        /// Paremeters from the camera calibration
+        /// </summary>
+        public ExtrinsicCameraParameters[] ExtrinsicPoints { get; private set; }
+
+        public CalibrationFinishedEventArgs(ExtrinsicCameraParameters[] extrinsicPoints)
+        {
+            this.ExtrinsicPoints = extrinsicPoints;
+        }
+        
+    }
 }
