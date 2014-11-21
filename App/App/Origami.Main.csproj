@@ -74,7 +74,6 @@
     <Compile Include="States\TurningHead.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="libs\cublas32_42_9.dll" />
     <Content Include="libs\cudart32_42_9.dll" />
     <Content Include="libs\cufft32_42_9.dll" />
     <Content Include="libs\cvextern.dll" />
@@ -96,7 +95,6 @@
     <Content Include="libs\opencv_features2d240.dll" />
     <Content Include="libs\opencv_ffmpeg240.dll" />
     <Content Include="libs\opencv_flann240.dll" />
-    <Content Include="libs\opencv_gpu240.dll" />
     <Content Include="libs\opencv_highgui240.dll" />
     <Content Include="libs\opencv_imgproc240.dll" />
     <Content Include="libs\opencv_legacy240.dll" />
