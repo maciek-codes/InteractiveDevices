@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using Origami.Modules;
 using Origami.States;
 using k = Microsoft.Kinect;
@@ -9,6 +10,7 @@ using Emgu.CV.Structure;
 using Emgu.CV.CvEnum;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using Rectangle = System.Drawing.Rectangle;
 
 namespace Origami
 {
@@ -25,6 +27,14 @@ namespace Origami
         ////** KINECT STUFF **
         private Microsoft.Kinect.KinectSensor sensor;
         private byte[] colorPixels;
+
+        /// <summary>
+        /// Paper position, width and height detected by Kinect
+        /// </summary>
+        private Rectangle paperRect;
+        private SceneNode cSceneNode;
+        private float zPositionSquare = 0.53f;
+
         /************************************************************************/
         /* program starts here                                                  */
         /************************************************************************/
@@ -106,7 +116,6 @@ namespace Origami
 
         void sensor_AllFramesReady(object sender, Microsoft.Kinect.AllFramesReadyEventArgs e)
         {
-            Console.WriteLine("sensor color frame ready");
             using (var colorFrame = e.OpenColorImageFrame())
             {
                 if (colorFrame == null)
@@ -135,7 +144,12 @@ namespace Origami
                 // Thresholding
                 var thresholdImage = subSection.ThresholdBinary(new Gray(thresholdMin), new Gray(thresholdMax));
 
-                FindContours(thresholdImage, subColSection);
+                var rectangle = FindContours(thresholdImage, subColSection);
+
+                if (rectangle.HasValue)
+                {
+                    this.paperRect = rectangle.Value;
+                }
 
             }
         }
@@ -159,7 +173,7 @@ namespace Origami
             return sect;
         }
 
-        private static void FindContours(Image<Gray, byte> thresholdImage, Image<Bgr, byte> subColSection)
+        private static System.Drawing.Rectangle? FindContours(Image<Gray, byte> thresholdImage, Image<Bgr, byte> subColSection)
         {
             using (var storage = new MemStorage())
             {
@@ -171,9 +185,11 @@ namespace Origami
 
                 if (contours != null)
                 {
-                    var boundingRect = contours.BoundingRectangle;
+                    return contours.BoundingRectangle;
                 }
             }
+
+            return null;
         }
 
 
@@ -187,26 +203,40 @@ namespace Origami
 
             // place the camera to a better position
             mEngine.Camera.Position = new Vector3(0.0f, 0.0f, 0.0f);
-            mEngine.Camera.Direction = new Vector3(0, 0, -1);
-            //mEngine.Camera.LookAt(new Vector3(0.0f, 0.0f, 1.0f));
+            mEngine.Camera.Direction = new Vector3(0, 0, 1);
+            //mEngine.Camera.LookAt(Vector3.ZERO);
+
             //mEngine.Camera.Roll(new Radian(new Degree(180)));
 
-            var matProj = new Matrix4(4.058233684232872f, 0, 0.1712672322695396f, 0,
+            // Propjection matrix
+            var matProj = new Matrix4(
+                4.058233684232872f, 0, 0.1712672322695396f, 0,
                 0, 5.330161980980033f, 0.6174778127392031f, 0,
                 0, 0, -1.02020202020202f, -0.202020202020202f,
                 0, 0, -1, 0);
 
-            var matView = new Matrix4(0.9998472841723921f, 0.0009793712472160466f, -0.01744847171106832f, -0.05399500685689796f,
+            // View Matrix
+            var matView = new Matrix4(
+                0.9998472841723921f, 0.0009793712472160466f, -0.01744847171106832f, -0.05399500685689796f,
                 -0.002812918702471569f, 0.9944289344642237f, -0.1053716365476118f, 0.08005271442927822f,
                 -0.01724806718055999f, -0.1054046257633356f, -0.9942798243181977f, 0.0005856650549028571f,
                 0, 0, 0, 1);
 
+            const float cameraHeighInMeters = 0.45f;
+            var angleOfTheCameraInDeg = new Degree(56);
+
             var transformMat = new Matrix4();
-            transformMat.MakeTransform(new Vector3(0, 0.5f, 0), new Vector3(1, 1, 1), new Quaternion(new Radian(new Degree(70)), new Vector3(1, 0, 0)));
+            transformMat.MakeTransform(new Vector3(0, cameraHeighInMeters, 0), 
+                new Vector3(1, 1, 1),
+                new Quaternion(new Radian(angleOfTheCameraInDeg), new Vector3(1, 0, 0)));
+
             matView = matView * transformMat;
 
+            
             mEngine.Camera.SetCustomProjectionMatrix(true, matProj);
             mEngine.Camera.SetCustomViewMatrix(true, matView);
+            
+            //mEngine.Camera.Roll(new Radian(new Degree(180)));
 
             // create one bright front light
             mLight1 = mEngine.SceneMgr.CreateLight("LIGHT1");
@@ -215,22 +245,29 @@ namespace Origami
             mLight1.Position = new Vector3(0f, 1f, 0f);
             mEngine.SceneMgr.RootSceneNode.AttachObject(mLight1);
 
-            // and a darker back light
-            //mLight2 = mEngine.SceneMgr.CreateLight( "LIGHT2" );
-            //mLight2.Type = Light.LightTypes.LT_POINT;
-            //mLight2.DiffuseColour = new ColourValue( 0.1f, 0.15f, 0.3f );
-            //mLight2.Position = new Vector3( 150.0f, 100.0f, -400.0f );
-            //mEngine.SceneMgr.RootSceneNode.AttachObject( mLight2 );
+            const float sizeOfSquareInM = 0.045f;
 
             var plane = new Plane(Vector3.UNIT_Y, 0);
-            MeshManager.Singleton.CreatePlane("ground", ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME, plane,
-                0.047f, 0.047f, 20, 20, true, 1, 5, 5, Vector3.UNIT_Z);
+            
+            var paperMesh = MeshManager.Singleton.CreatePlane("ground", ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME, plane,
+                sizeOfSquareInM, sizeOfSquareInM, 
+                20, 20, true, 1, 5, 5, Vector3.UNIT_Z);
+
             Entity groundEnt = mEngine.SceneMgr.CreateEntity("GroundEntity", "ground");
-            var cSceneNode = mEngine.SceneMgr.RootSceneNode.CreateChildSceneNode();
-            cSceneNode.SetPosition(0.04f, 0, 0.57f);
+            cSceneNode = mEngine.SceneMgr.RootSceneNode.CreateChildSceneNode();
+
+            const float xPositionSquare = 0.07f;
+            const float yPositionSquare = 0f;
+            const float zPositionSquare = 0.53f; //0.62f;
+
+            // Set the square 
+            cSceneNode.SetPosition(xPositionSquare, yPositionSquare, zPositionSquare);
             cSceneNode.AttachObject(groundEnt);
             groundEnt.SetMaterialName("Examples/Rockwall");
             groundEnt.CastShadows = false;
+            
+
+            Console.WriteLine("Camera X:{0} Y:{1} Z:{2}", mEngine.Camera.Position.x, mEngine.Camera.Position.y, mEngine.Camera.Position.z);
         }
 
         /************************************************************************/
@@ -238,6 +275,24 @@ namespace Origami
         /************************************************************************/
         public void UpdateScene()
         {
+
+
+            var paperRectangle = this.paperRect;
+            var paperX = Convert.ToSingle(paperRectangle.X);
+            var paperY = Convert.ToSingle(paperRectangle.Y);
+            var paperWidth = Convert.ToSingle(paperRectangle.Width);
+            var paperHeight = Convert.ToSingle(paperRectangle.Height);
+
+            const float xPositionSquare = 0.07f;
+            const float yPositionSquare = 0f;
+
+            if (cSceneNode != null)
+            {
+                cSceneNode.SetPosition(xPositionSquare, yPositionSquare, zPositionSquare);
+            }
+
+            zPositionSquare -= 0.0000001f;
+
             // update the state manager, this will automatically update the active state
             mStateMgr.Update(0);
         }
