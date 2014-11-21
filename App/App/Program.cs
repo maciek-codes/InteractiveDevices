@@ -1,8 +1,8 @@
 ﻿using System;
+using Origami.Modules;
+using Origami.States;
 using k = Microsoft.Kinect;
 using Mogre;
-using Quickstart2010.Modules;
-using Quickstart2010.States;
 using System.IO;
 using Emgu.CV;
 using Emgu.CV.Structure;
@@ -10,7 +10,7 @@ using Emgu.CV.CvEnum;
 using System.Drawing;
 using System.Runtime.InteropServices;
 
-namespace Quickstart2010
+namespace Origami
 {
   public class Program
   {

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Reflection;
 
-namespace Quickstart2010.Modules
+namespace Origami.Modules
 {
   /************************************************************************/
   /* state manager for program states                                     */

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Quickstart2010.Modules
+namespace Origami.Modules
 {
   /************************************************************************/
   /* base class for program states                                        */

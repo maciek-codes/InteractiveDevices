@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Quickstart2010.Modules
+namespace Origami.Modules
 {
   /************************************************************************/
   /* resource group configuration                                         */

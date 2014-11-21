@@ -1,10 +1,9 @@
 ﻿using System;
 
 using Mogre;
+using Origami.Modules;
 
-using Quickstart2010.Modules;
-
-namespace Quickstart2010.States
+namespace Origami.States
 {
   /************************************************************************/
   /* program state that just shows a turning ogre head                    */

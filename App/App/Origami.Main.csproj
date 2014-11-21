@@ -8,8 +8,8 @@
     <ProjectGuid>{6A286245-E004-447F-A3B2-4E62472653F0}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Quickstart2010</RootNamespace>
-    <AssemblyName>Quickstart2010</AssemblyName>
+    <RootNamespace>Origami</RootNamespace>
+    <AssemblyName>Origami</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>

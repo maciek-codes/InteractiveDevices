@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Quickstart2010.Modules
+namespace Origami.Modules
 {
   /************************************************************************/
   /* event arguments for ogre events (device lost or restored)            */

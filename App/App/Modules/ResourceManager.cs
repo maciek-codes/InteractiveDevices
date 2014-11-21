@@ -4,7 +4,7 @@ using System.IO;
 
 using Mogre;
 
-namespace Quickstart2010.Modules
+namespace Origami.Modules
 {
   /************************************************************************/
   /* resource manager uses ogre resource group manager                    */
