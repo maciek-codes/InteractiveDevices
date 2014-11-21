@@ -1,0 +1,123 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{6A286245-E004-447F-A3B2-4E62472653F0}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Quickstart2010</RootNamespace>
+    <AssemblyName>Quickstart2010</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Emgu.CV, Version=2.4.2.1777, Culture=neutral, PublicKeyToken=7281126722ab4438, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>libs\Emgu.CV.dll</HintPath>
+    </Reference>
+    <Reference Include="Emgu.CV.UI, Version=2.4.2.1777, Culture=neutral, PublicKeyToken=7281126722ab4438, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>libs\Emgu.CV.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="Emgu.Util, Version=2.4.2.1777, Culture=neutral, PublicKeyToken=7281126722ab4438, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>libs\Emgu.Util.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Kinect, Version=1.8.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="Mogre, Version=1.7.1.0, Culture=neutral, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>bin\Release\Mogre.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.XML" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Modules\OgreEventArgs.cs" />
+    <Compile Include="Modules\OgreManager.cs" />
+    <Compile Include="Modules\ResourceConfig.cs" />
+    <Compile Include="Modules\ResourceManager.cs" />
+    <Compile Include="Modules\State.cs" />
+    <Compile Include="Modules\StateManager.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="States\TurningHead.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="libs\cublas32_42_9.dll" />
+    <Content Include="libs\cudart32_42_9.dll" />
+    <Content Include="libs\cufft32_42_9.dll" />
+    <Content Include="libs\cvextern.dll" />
+    <Content Include="libs\cvextern_gpu.dll" />
+    <Content Include="libs\cvextern_test.exe" />
+    <Content Include="libs\Emgu.CV.DebuggerVisualizers.VS2008.dll" />
+    <Content Include="libs\Emgu.CV.DebuggerVisualizers.VS2010.dll" />
+    <Content Include="libs\Emgu.CV.dll" />
+    <Content Include="libs\Emgu.CV.GPU.dll" />
+    <Content Include="libs\Emgu.CV.ML.dll" />
+    <Content Include="libs\Emgu.CV.OCR.dll" />
+    <Content Include="libs\Emgu.CV.Stitching.dll" />
+    <Content Include="libs\Emgu.CV.UI.dll" />
+    <Content Include="libs\Emgu.Util.dll" />
+    <Content Include="libs\npp32_42_9.dll" />
+    <Content Include="libs\opencv_calib3d240.dll" />
+    <Content Include="libs\opencv_contrib240.dll" />
+    <Content Include="libs\opencv_core240.dll" />
+    <Content Include="libs\opencv_features2d240.dll" />
+    <Content Include="libs\opencv_ffmpeg240.dll" />
+    <Content Include="libs\opencv_flann240.dll" />
+    <Content Include="libs\opencv_gpu240.dll" />
+    <Content Include="libs\opencv_highgui240.dll" />
+    <Content Include="libs\opencv_imgproc240.dll" />
+    <Content Include="libs\opencv_legacy240.dll" />
+    <Content Include="libs\opencv_ml240.dll" />
+    <Content Include="libs\opencv_nonfree240.dll" />
+    <Content Include="libs\opencv_objdetect240.dll" />
+    <Content Include="libs\opencv_photo240.dll" />
+    <Content Include="libs\opencv_stitching240.dll" />
+    <Content Include="libs\opencv_video240.dll" />
+    <Content Include="libs\opencv_videostab240.dll" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy /Y "$(ProjectDir)libs\*.dll" "$(TargetDir)"
+</PostBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
