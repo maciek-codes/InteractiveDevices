@@ -91,7 +91,7 @@ namespace Origami.Modules
             parm["vsync"] = "true";
 
             // create windowl
-            mWindow = mRoot.CreateRenderWindow(RenderWindowTitle, 1024, 768, false, parm);
+            mWindow = mRoot.CreateRenderWindow(RenderWindowTitle, 1024, 768, true, parm);
 
             // create scene manager
             mSceneMgr = mRoot.CreateSceneManager(SceneType.ST_GENERIC, "DefaultSceneManager");

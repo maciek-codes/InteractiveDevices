@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using Origami.Modules;
 using Origami.States;
+using Origami.Utilities;
 using k = Microsoft.Kinect;
 using Mogre;
 using System.IO;
@@ -34,6 +35,13 @@ namespace Origami
         private Rectangle paperRect;
         private SceneNode cSceneNode;
         private float zPositionSquare = 0.53f;
+        private k.DepthImagePixel[] depthPixes;
+        private string kinectColorWindowName;
+        private string kinectDepthWindowName;
+        private string kinectThresholdWindowName;
+        private k.SkeletonPoint skeletonPoint;
+        private Matrix4 matProj;
+        private Matrix4 matView;
 
         /************************************************************************/
         /* program starts here                                                  */
@@ -97,11 +105,18 @@ namespace Origami
             if (null != this.sensor)
             {
                 this.sensor.ColorStream.Enable(k.ColorImageFormat.RgbResolution640x480Fps30);
+                this.sensor.DepthStream.Enable(k.DepthImageFormat.Resolution640x480Fps30);
 
                 // Initialize buffer for pixels from kinect
                 this.colorPixels = new byte[this.sensor.ColorStream.FramePixelDataLength];
-
+                this.depthPixes = new k.DepthImagePixel[this.sensor.DepthStream.FramePixelDataLength];
                 this.sensor.AllFramesReady += sensor_AllFramesReady;
+                this.kinectColorWindowName = "Kinect color";
+                CvInvoke.cvNamedWindow(this.kinectColorWindowName);
+                this.kinectDepthWindowName = "Kinect depth";
+                CvInvoke.cvNamedWindow(this.kinectDepthWindowName);
+                kinectThresholdWindowName = "Threshold window";
+                CvInvoke.cvNamedWindow(this.kinectThresholdWindowName);
 
                 try
                 {
@@ -123,34 +138,83 @@ namespace Origami
                     return;
                 }
 
-                colorFrame.CopyPixelDataTo(this.colorPixels);
-
-                GCHandle handle = GCHandle.Alloc(this.colorPixels, GCHandleType.Pinned);
-                Bitmap image = new Bitmap(colorFrame.Width,
-                    colorFrame.Height,
-                    colorFrame.Width << 2, System.Drawing.Imaging.PixelFormat.Format32bppRgb, handle.AddrOfPinnedObject());
-                handle.Free();
-                var openCvImgColour = new Image<Bgr, byte>(image);
-                var openCvImgGrayscale = new Image<Gray, byte>(image);
-                image.Dispose();
-
-                var subSection = ExctractSubSection(openCvImgGrayscale);
-                var subColSection = ExctractSubSection(openCvImgColour);
-
-                // Get threshold value
-                var thresholdMin = 60;
-                var thresholdMax = 255;
-
-                // Thresholding
-                var thresholdImage = subSection.ThresholdBinary(new Gray(thresholdMin), new Gray(thresholdMax));
-
-                var rectangle = FindContours(thresholdImage, subColSection);
-
-                if (rectangle.HasValue)
+                using (var depthFrame = e.OpenDepthImageFrame())
                 {
-                    this.paperRect = rectangle.Value;
-                }
+                    if (depthFrame == null)
+                    {
+                        return;
+                    }             
+                    colorFrame.CopyPixelDataTo(this.colorPixels);
+                    depthFrame.CopyDepthImagePixelDataTo(this.depthPixes);
 
+                    GCHandle handle = GCHandle.Alloc(this.colorPixels, GCHandleType.Pinned);
+                    Bitmap image = new Bitmap(colorFrame.Width,
+                        colorFrame.Height,
+                        colorFrame.Width << 2, System.Drawing.Imaging.PixelFormat.Format32bppRgb,
+                        handle.AddrOfPinnedObject());
+                    handle.Free();
+
+                    GCHandle handle2 = GCHandle.Alloc(this.depthPixes, GCHandleType.Pinned);
+                    Bitmap image2 = new Bitmap(depthFrame.Width,
+                        depthFrame.Height,
+                        depthFrame.Width << 2, System.Drawing.Imaging.PixelFormat.Format32bppRgb,
+                        handle2.AddrOfPinnedObject());
+                    handle2.Free();
+
+                    var colorImage = new Image<Bgr, byte>(image);
+                    var openCvImgGrayscale = new Image<Gray, byte>(image);
+                    var depthImage = new Image<Bgr, byte>(image2);
+                    image.Dispose();
+
+                    //var subSection = ExctractSubSection(openCvImgGrayscale);
+                    //var subColSection = ExctractSubSection(openCvImgColour);
+
+                    // Get threshold value
+                    var thresholdMin = 125;
+                    var thresholdMax = 255;
+
+                    // Thresholding
+                    var thresholdImage = openCvImgGrayscale.ThresholdBinary(new Gray(thresholdMin), new Gray(thresholdMax));
+
+                    thresholdImage.SmoothMedian(3);
+                    var rectangle = FindContours(thresholdImage, colorImage);
+
+                    if (rectangle.HasValue)
+                    {
+                        this.paperRect = rectangle.Value;
+                    }
+                    k.CoordinateMapper mapper = new k.CoordinateMapper(sensor);
+
+                    k.DepthImagePoint[] depthImagePoints = new k.DepthImagePoint[colorFrame.Width*colorFrame.Height];
+                    
+                    mapper.MapColorFrameToDepthFrame(colorFrame.Format, depthFrame.Format, depthPixes,
+                        depthImagePoints);
+
+                    var index = paperRect.Y * colorFrame.Width + paperRect.X;
+
+                    // Let's choose point (100, 100)
+                    colorImage.Draw(new Cross2DF(new PointF(paperRect.X, paperRect.Y), 2.0f, 2.0f), new Bgr(Color.White), 1);
+
+                    //Console.WriteLine("x={0} y={1}", depthImagePoints[index].X, depthImagePoints[index].Y);
+
+                    depthImage.Draw(new Cross2DF(
+                        new PointF(depthImagePoints[index].X, depthImagePoints[index].Y), 
+                        2.0f, 2.0f), new Bgr(Color.White), 1);
+
+
+
+                    this.skeletonPoint = mapper.MapDepthPointToSkeletonPoint(depthFrame.Format,
+                        depthImagePoints[index]);
+
+                    colorImage.Draw(paperRect, new Bgr(Color.Yellow), 2);
+
+                    //Console.WriteLine("Skeleton Point x={0} y={1} z={2}", 
+                     //   skeletonPoint.X, skeletonPoint.Y, skeletonPoint.Z);
+
+                    CvInvoke.cvShowImage(this.kinectColorWindowName, colorImage);
+                    CvInvoke.cvShowImage(this.kinectDepthWindowName, depthImage);
+                    CvInvoke.cvShowImage(this.kinectThresholdWindowName, thresholdImage);
+                }
             }
         }
 
@@ -209,24 +273,20 @@ namespace Origami
             //mEngine.Camera.Roll(new Radian(new Degree(180)));
 
             // Propjection matrix
-            var matProj = new Matrix4(
-                4.058233684232872f, 0, 0.1712672322695396f, 0,
-                0, 5.330161980980033f, 0.6174778127392031f, 0,
-                0, 0, -1.02020202020202f, -0.202020202020202f,
-                0, 0, -1, 0);
+            var calibrationReader = new CalibrationSettingsReader("device_0.txt");
+            calibrationReader.Read();
+
+            this.matProj = calibrationReader.ProjectionMatrix;
 
             // View Matrix
-            var matView = new Matrix4(
-                0.9998472841723921f, 0.0009793712472160466f, -0.01744847171106832f, -0.05399500685689796f,
-                -0.002812918702471569f, 0.9944289344642237f, -0.1053716365476118f, 0.08005271442927822f,
-                -0.01724806718055999f, -0.1054046257633356f, -0.9942798243181977f, 0.0005856650549028571f,
-                0, 0, 0, 1);
+            this.matView = calibrationReader.ViewMatrix;
 
             const float cameraHeighInMeters = 0.45f;
-            var angleOfTheCameraInDeg = new Degree(56);
+            var angleOfTheCameraInDeg = new Degree(78);
 
             var transformMat = new Matrix4();
-            transformMat.MakeTransform(new Vector3(0, cameraHeighInMeters, 0), 
+            transformMat.MakeTransform(
+                new Vector3(0, cameraHeighInMeters, 0), 
                 new Vector3(1, 1, 1),
                 new Quaternion(new Radian(angleOfTheCameraInDeg), new Vector3(1, 0, 0)));
 
@@ -249,25 +309,25 @@ namespace Origami
 
             var plane = new Plane(Vector3.UNIT_Y, 0);
             
-            var paperMesh = MeshManager.Singleton.CreatePlane("ground", ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME, plane,
+            MeshManager.Singleton.CreatePlane("ground", ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME, plane,
                 sizeOfSquareInM, sizeOfSquareInM, 
                 20, 20, true, 1, 5, 5, Vector3.UNIT_Z);
 
             Entity groundEnt = mEngine.SceneMgr.CreateEntity("GroundEntity", "ground");
-            cSceneNode = mEngine.SceneMgr.RootSceneNode.CreateChildSceneNode();
-
-            const float xPositionSquare = 0.07f;
+            this.cSceneNode = mEngine.SceneMgr.RootSceneNode.CreateChildSceneNode();
+      
+            const float xPositionSquare = 0.05f;
             const float yPositionSquare = 0f;
             const float zPositionSquare = 0.53f; //0.62f;
 
             // Set the square 
             cSceneNode.SetPosition(xPositionSquare, yPositionSquare, zPositionSquare);
-            cSceneNode.AttachObject(groundEnt);
-            groundEnt.SetMaterialName("Examples/Rockwall");
-            groundEnt.CastShadows = false;
-            
 
-            Console.WriteLine("Camera X:{0} Y:{1} Z:{2}", mEngine.Camera.Position.x, mEngine.Camera.Position.y, mEngine.Camera.Position.z);
+            groundEnt.SetMaterialName("my1_mycolor");
+            groundEnt.CastShadows = false;
+            cSceneNode.AttachObject(groundEnt);
+
+ 
         }
 
         /************************************************************************/
@@ -275,25 +335,18 @@ namespace Origami
         /************************************************************************/
         public void UpdateScene()
         {
-
-
-            var paperRectangle = this.paperRect;
-            var paperX = Convert.ToSingle(paperRectangle.X);
-            var paperY = Convert.ToSingle(paperRectangle.Y);
-            var paperWidth = Convert.ToSingle(paperRectangle.Width);
-            var paperHeight = Convert.ToSingle(paperRectangle.Height);
-
-            const float xPositionSquare = 0.07f;
-            const float yPositionSquare = 0f;
-
-            if (cSceneNode != null)
+            if (this.cSceneNode != null)
             {
-                cSceneNode.SetPosition(xPositionSquare, yPositionSquare, zPositionSquare);
+                Console.WriteLine("Skeleton Point x={0} y={1} z={2}", skeletonPoint.X, skeletonPoint.Y, skeletonPoint.Z);
+                Matrix4 viewProjectionInverse = matProj *
+            matView;
+                viewProjectionInverse = viewProjectionInverse.Inverse();
+
+                // Do we need to inverse -x?
+                Vector3 point3D  = new Vector3(-skeletonPoint.X, skeletonPoint.Y, skeletonPoint.Z);
+                var point = viewProjectionInverse * point3D;
+                this.cSceneNode.SetPosition(point.x, point.y, point.z);
             }
-
-            zPositionSquare -= 0.0000001f;
-
-            // update the state manager, this will automatically update the active state
             mStateMgr.Update(0);
         }
 
