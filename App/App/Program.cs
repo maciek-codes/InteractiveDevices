@@ -40,8 +40,10 @@ namespace Origami
         private string kinectDepthWindowName;
         private string kinectThresholdWindowName;
         private k.SkeletonPoint skeletonPoint;
-        private Matrix4 matProj;
-        private Matrix4 matView;
+        private Matrix4 projectionMatrix;
+        private Matrix4 viewMatrix;
+        private Matrix4 transformMat;
+        private Matrix4 inverseTransformMat;
 
         /************************************************************************/
         /* program starts here                                                  */
@@ -166,78 +168,111 @@ namespace Origami
                     var depthImage = new Image<Bgr, byte>(image2);
                     image.Dispose();
 
-                    //var subSection = ExctractSubSection(openCvImgGrayscale);
-                    //var subColSection = ExctractSubSection(openCvImgColour);
+                    //  Get points form depth sensor
+                    var depthImagePoints = new k.DepthImagePoint[colorFrame.Width * colorFrame.Height];
+
+                    // Map color and depth frame from Kinect
+                    var mapper = new k.CoordinateMapper(sensor);
+                    mapper.MapColorFrameToDepthFrame(colorFrame.Format, depthFrame.Format, depthPixes,
+                        depthImagePoints);
+
 
                     // Get threshold value
                     var thresholdMin = 125;
                     var thresholdMax = 255;
 
                     // Thresholding
+                    var trimmedColorImage = ExtractSubSection(colorImage);
+
                     var thresholdImage = openCvImgGrayscale.ThresholdBinary(new Gray(thresholdMin), new Gray(thresholdMax));
 
+                    var trimmedthresholdImage = ExtractSubSection(thresholdImage);
+
+
                     thresholdImage.SmoothMedian(3);
-                    var rectangle = FindContours(thresholdImage, colorImage);
+                    var rectangle = FindContours(trimmedthresholdImage, trimmedColorImage);
 
                     if (rectangle.HasValue)
                     {
                         this.paperRect = rectangle.Value;
+
+                        int x = paperRect.X + paperRect.Width;
+                        int y = paperRect.Y + paperRect.Height;
+
+                        // Find where the X,Y point is in the 1-D array of color frame
+                        var index = y * colorFrame.Width + x;
+
+                        // Let's choose point e.g. (x, y)
+                        trimmedColorImage.Draw(new Cross2DF(new PointF(x, y), 2.0f, 2.0f), new Bgr(Color.White), 1);
+
+                        // Draw it on depth image
+                        depthImage.Draw(new Cross2DF(
+                            new PointF(depthImagePoints[index].X, depthImagePoints[index].Y),
+                            2.0f, 2.0f), new Bgr(Color.White), 1);
+
+                        // Draw on color image the B-box found
+                        trimmedthresholdImage.Draw(paperRect, new Gray(0), 2);
+
+                        // Get the point in skeleton space
+                        this.skeletonPoint = mapper.MapDepthPointToSkeletonPoint(depthFrame.Format,
+                            depthImagePoints[index]);
                     }
-                    k.CoordinateMapper mapper = new k.CoordinateMapper(sensor);
-
-                    k.DepthImagePoint[] depthImagePoints = new k.DepthImagePoint[colorFrame.Width*colorFrame.Height];
                     
-                    mapper.MapColorFrameToDepthFrame(colorFrame.Format, depthFrame.Format, depthPixes,
-                        depthImagePoints);
-
-                    var index = paperRect.Y * colorFrame.Width + paperRect.X;
-
-                    // Let's choose point (100, 100)
-                    colorImage.Draw(new Cross2DF(new PointF(paperRect.X, paperRect.Y), 2.0f, 2.0f), new Bgr(Color.White), 1);
-
-                    //Console.WriteLine("x={0} y={1}", depthImagePoints[index].X, depthImagePoints[index].Y);
-
-                    depthImage.Draw(new Cross2DF(
-                        new PointF(depthImagePoints[index].X, depthImagePoints[index].Y), 
-                        2.0f, 2.0f), new Bgr(Color.White), 1);
-
-
-
-                    this.skeletonPoint = mapper.MapDepthPointToSkeletonPoint(depthFrame.Format,
-                        depthImagePoints[index]);
-
-                    colorImage.Draw(paperRect, new Bgr(Color.Yellow), 2);
-
-                    //Console.WriteLine("Skeleton Point x={0} y={1} z={2}", 
-                     //   skeletonPoint.X, skeletonPoint.Y, skeletonPoint.Z);
-
-                    CvInvoke.cvShowImage(this.kinectColorWindowName, colorImage);
+                    CvInvoke.cvShowImage(this.kinectColorWindowName, trimmedColorImage);
                     CvInvoke.cvShowImage(this.kinectDepthWindowName, depthImage);
-                    CvInvoke.cvShowImage(this.kinectThresholdWindowName, thresholdImage);
+                    CvInvoke.cvShowImage(this.kinectThresholdWindowName, trimmedthresholdImage);
                 }
             }
         }
 
-        private static Image<TColor, TDepth> ExctractSubSection<TColor, TDepth>(Image<TColor, TDepth> sourceImage)
+        public Vector3 convertKinectToProjector(Vector3 kinectPoint)
+        {
+            // Transform by transformation matrix
+            var pointTranlated = transformMat * kinectPoint;
+
+            // Print it please
+            Console.WriteLine("Transformed point X={0} Y={1} Z={2}",
+                pointTranlated.x, pointTranlated.y, pointTranlated.z);
+
+            return pointTranlated;
+        }
+
+        private static Image<TColor, TDepth> ExtractSubSection<TColor, TDepth>(Image<TColor, TDepth> sourceImage)
             where TColor : struct, IColor
             where TDepth : new()
         {
+            int paddingTop = 100, paddingBottom = 150;
+            int paddingLeft = 125, paddingRight = 125;
+
+            Image<TColor, TDepth> maskImage = new Image<TColor, TDepth>(sourceImage.Size);
+
+
+            maskImage.SetZero();
 
             Image<TColor, TDepth> sect;
             try
             {
-                sect = sourceImage.GetSubRect(new System.Drawing.Rectangle(150, 0,
-                    400,
-                    250));
+                for (int row = paddingTop; row < sourceImage.Height - paddingBottom; row++)
+                {
+                    for (int col = paddingLeft; col < sourceImage.Width - paddingRight; col++)
+                    {
+                        maskImage[row, col] = sourceImage[row, col];
+                    }
+                }
+
+                //sect = sourceImage.GetSubRect(new Rectangle(paddingLeft, paddingTop,
+                //    sourceImage.Width - paddingRight,
+                //    sourceImage.Height - paddingBottom));
             }
             catch (Exception ex)
             {
                 throw ex;
             }
-            return sect;
+
+            return maskImage;
         }
 
-        private static System.Drawing.Rectangle? FindContours(Image<Gray, byte> thresholdImage, Image<Bgr, byte> subColSection)
+        private static Rectangle? FindContours(Image<Gray, byte> thresholdImage, Image<Bgr, byte> coloImage)
         {
             using (var storage = new MemStorage())
             {
@@ -249,6 +284,9 @@ namespace Origami
 
                 if (contours != null)
                 {
+                    var polygonPoints = contours.ApproxPoly(contours.Perimeter*0.05);
+                    coloImage.Draw(polygonPoints, new Bgr(Color.Yellow), 2);
+
                     return contours.BoundingRectangle;
                 }
             }
@@ -262,42 +300,34 @@ namespace Origami
         /************************************************************************/
         public void CreateScene()
         {
+            float distanceCameraProjection = -0.18f;
+            float cameraAngelDeg = 70.0f;
+            float heightCamera = 84.0f;
+
             // set a dark ambient light
             mEngine.SceneMgr.AmbientLight = new ColourValue(0.1f, 0.1f, 0.1f);
 
             // place the camera to a better position
-            mEngine.Camera.Position = new Vector3(0.0f, 0.0f, 0.0f);
-            mEngine.Camera.Direction = new Vector3(0, 0, 1);
-            //mEngine.Camera.LookAt(Vector3.ZERO);
+            mEngine.Camera.Position = new Vector3(0.0f, 0.0f, -2.0f);
+            mEngine.Camera.Direction = Vector3.UNIT_Z;
+           
+           // mEngine.Camera.LookAt(Vector3.UNIT_Z);
 
-            //mEngine.Camera.Roll(new Radian(new Degree(180)));
+            InitializeViewAndProjectionMatrices();
 
-            // Propjection matrix
-            var calibrationReader = new CalibrationSettingsReader("device_0.txt");
-            calibrationReader.Read();
+            // Create transform matrix
+            CreateTransformMatrix(heightCamera, distanceCameraProjection, cameraAngelDeg);
 
-            this.matProj = calibrationReader.ProjectionMatrix;
+            this.inverseTransformMat = transformMat.Inverse();
 
-            // View Matrix
-            this.matView = calibrationReader.ViewMatrix;
+            this.viewMatrix = this.viewMatrix * inverseTransformMat;
+           
+            // Apply our matrices to the camera
+            mEngine.Camera.SetCustomProjectionMatrix(true, this.projectionMatrix);
+            mEngine.Camera.SetCustomViewMatrix(true, this.viewMatrix);
 
-            const float cameraHeighInMeters = 0.45f;
-            var angleOfTheCameraInDeg = new Degree(78);
-
-            var transformMat = new Matrix4();
-            transformMat.MakeTransform(
-                new Vector3(0, cameraHeighInMeters, 0), 
-                new Vector3(1, 1, 1),
-                new Quaternion(new Radian(angleOfTheCameraInDeg), new Vector3(1, 0, 0)));
-
-            matView = matView * transformMat;
-
+            Console.WriteLine("Transform X={0} Y={1} Z={2}", this.viewMatrix[0,3],this.viewMatrix[1,3],this.viewMatrix[2,3]);
             
-            mEngine.Camera.SetCustomProjectionMatrix(true, matProj);
-            mEngine.Camera.SetCustomViewMatrix(true, matView);
-            
-            //mEngine.Camera.Roll(new Radian(new Degree(180)));
-
             // create one bright front light
             mLight1 = mEngine.SceneMgr.CreateLight("LIGHT1");
             mLight1.Type = Light.LightTypes.LT_POINT;
@@ -305,29 +335,105 @@ namespace Origami
             mLight1.Position = new Vector3(0f, 1f, 0f);
             mEngine.SceneMgr.RootSceneNode.AttachObject(mLight1);
 
-            const float sizeOfSquareInM = 0.045f;
+            const float paperWidth = 0.1f;
+            const float paperHeight = 0.1f;
 
             var plane = new Plane(Vector3.UNIT_Y, 0);
             
-            MeshManager.Singleton.CreatePlane("ground", ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME, plane,
-                sizeOfSquareInM, sizeOfSquareInM, 
-                20, 20, true, 1, 5, 5, Vector3.UNIT_Z);
+            //MeshManager.Singleton.Create(,
+            //    ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME, 
+            //    plane,
+            //    paperWidth, paperHeight, 
+            //    20, 20, true, 1, 5, 5, Vector3.UNIT_Z);
 
-            Entity groundEnt = mEngine.SceneMgr.CreateEntity("GroundEntity", "ground");
-            this.cSceneNode = mEngine.SceneMgr.RootSceneNode.CreateChildSceneNode();
-      
-            const float xPositionSquare = 0.05f;
-            const float yPositionSquare = 0f;
-            const float zPositionSquare = 0.53f; //0.62f;
+            //Entity groundEnt = mEngine.SceneMgr.CreateEntity("GroundEntity", "ground");
+            cSceneNode = mEngine.SceneMgr.RootSceneNode.CreateChildSceneNode();
+            cSceneNode.SetPosition(0.0f, 0.0f, 0.0f);
+            cSceneNode.Scale(new Vector3(0.1f, 0.1f, 0.1f));
+            ManualObject manualObject = CreateMesh("Cube", "my1_mycolor");
+            manualObject.CastShadows = false;
+            cSceneNode.AttachObject(manualObject);
 
-            // Set the square 
-            cSceneNode.SetPosition(xPositionSquare, yPositionSquare, zPositionSquare);
-
-            groundEnt.SetMaterialName("my1_mycolor");
-            groundEnt.CastShadows = false;
-            cSceneNode.AttachObject(groundEnt);
+            //groundEnt.SetMaterialName("my1_mycolor");
+            //groundEnt.CastShadows = false;
+            //cSceneNode.AttachObject(groundEnt);
 
  
+
+
+        }
+
+        private void InitializeViewAndProjectionMatrices()
+        {
+            // Read from settings
+            var calibrationReader = new CalibrationSettingsReader("device_0.txt");
+            calibrationReader.Read();
+
+            // Set Projection matrix
+            this.projectionMatrix = calibrationReader.ProjectionMatrix;
+
+            // View Matrix
+            this.viewMatrix = calibrationReader.ViewMatrix;
+
+        }
+
+        ManualObject CreateMesh(String name, String matName)
+        {
+
+            ManualObject cube = new ManualObject(name);
+            cube.Begin(matName);
+
+            cube.Position(0.5f, -0.5f, 1.0f); cube.Normal(0.408248f, -0.816497f, 0.408248f); cube.TextureCoord(1, 0);
+            cube.Position(-0.5f, -0.5f, 0.0f); cube.Normal(-0.408248f, -0.816497f, -0.408248f); cube.TextureCoord(0, 1);
+            cube.Position(0.5f, -0.5f, 0.0f); cube.Normal(0.666667f, -0.333333f, -0.666667f); cube.TextureCoord(1, 1);
+            cube.Position(-0.5f, -0.5f, 1.0f); cube.Normal(-0.666667f, -0.333333f, 0.666667f); cube.TextureCoord(0, 0);
+            cube.Position(0.5f, 0.5f, 1.0f); cube.Normal(0.666667f, 0.333333f, 0.666667f); cube.TextureCoord(1, 0);
+            cube.Position(-0.5f, -0.5f, 1.0f); cube.Normal(-0.666667f, -0.333333f, 0.666667f); cube.TextureCoord(0, 1);
+            cube.Position(0.5f, -0.5f, 1.0f); cube.Normal(0.408248f, -0.816497f, 0.408248f); cube.TextureCoord(1, 1);
+            cube.Position(-0.5f, 0.5f, 1.0f); cube.Normal(-0.408248f, 0.816497f, 0.408248f); cube.TextureCoord(0, 0);
+            cube.Position(-0.5f, 0.5f, 0.0f); cube.Normal(-0.666667f, 0.333333f, -0.666667f); cube.TextureCoord(0, 1);
+            cube.Position(-0.5f, -0.5f, 0.0f); cube.Normal(-0.408248f, -0.816497f, -0.408248f); cube.TextureCoord(1, 1);
+            cube.Position(-0.5f, -0.5f, 1.0f); cube.Normal(-0.666667f, -0.333333f, 0.666667f); cube.TextureCoord(1, 0);
+            cube.Position(0.5f, -0.5f, 0.0f); cube.Normal(0.666667f, -0.333333f, -0.666667f); cube.TextureCoord(0, 1);
+            cube.Position(0.5f, 0.5f, 0.0f); cube.Normal(0.408248f, 0.816497f, -0.408248f); cube.TextureCoord(1, 1);
+            cube.Position(0.5f, -0.5f, 1.0f); cube.Normal(0.408248f, -0.816497f, 0.408248f); cube.TextureCoord(0, 0);
+            cube.Position(0.5f, -0.5f, 0.0f); cube.Normal(0.666667f, -0.333333f, -0.666667f); cube.TextureCoord(1, 0);
+            cube.Position(-0.5f, -0.5f, 0.0f); cube.Normal(-0.408248f, -0.816497f, -0.408248f); cube.TextureCoord(0, 0);
+            cube.Position(-0.5f, 0.5f, 1.0f); cube.Normal(-0.408248f, 0.816497f, 0.408248f); cube.TextureCoord(1, 0);
+            cube.Position(0.5f, 0.5f, 0.0f); cube.Normal(0.408248f, 0.816497f, -0.408248f); cube.TextureCoord(0, 1);
+            cube.Position(-0.5f, 0.5f, 0.0f); cube.Normal(-0.666667f, 0.333333f, -0.666667f); cube.TextureCoord(1, 1);
+            cube.Position(0.5f, 0.5f, 1.0f); cube.Normal(0.666667f, 0.333333f, 0.666667f); cube.TextureCoord(0, 0);
+
+
+            cube.Triangle(0, 1, 2); cube.Triangle(3, 1, 0);
+            cube.Triangle(4, 5, 6); cube.Triangle(4, 7, 5);
+            cube.Triangle(8, 9, 10); cube.Triangle(10, 7, 8);
+            cube.Triangle(4, 11, 12); cube.Triangle(4, 13, 11);
+            cube.Triangle(14, 8, 12); cube.Triangle(14, 15, 8);
+            cube.Triangle(16, 17, 18); cube.Triangle(16, 19, 17);
+            cube.End();
+
+            return cube;
+
+        }
+
+        /// <summary>
+        /// Create transformation matrix
+        /// </summary>
+        /// <param name="cameraHeighInMeters">Camera height in meters</param>
+        /// <param name="zTransl">Distance between origin on projection and camera</param>
+        /// <param name="angleOfTheCameraInDeg">Camera angle</param>
+        private void CreateTransformMatrix(
+            float cameraHeighInMeters, 
+            float zTransl,
+            float angleOfTheCameraInDeg)
+        {
+            this.transformMat = new Matrix4();
+
+                this.transformMat.MakeTransform(
+                new Vector3(0, cameraHeighInMeters, zTransl),
+                new Vector3(1, 1, 1),
+                new Quaternion(new Radian(new Degree(angleOfTheCameraInDeg)), new Vector3(1, 0, 0)));
         }
 
         /************************************************************************/
@@ -337,15 +443,10 @@ namespace Origami
         {
             if (this.cSceneNode != null)
             {
-                Console.WriteLine("Skeleton Point x={0} y={1} z={2}", skeletonPoint.X, skeletonPoint.Y, skeletonPoint.Z);
-                Matrix4 viewProjectionInverse = matProj *
-            matView;
-                viewProjectionInverse = viewProjectionInverse.Inverse();
 
-                // Do we need to inverse -x?
-                Vector3 point3D  = new Vector3(-skeletonPoint.X, skeletonPoint.Y, skeletonPoint.Z);
-                var point = viewProjectionInverse * point3D;
-                this.cSceneNode.SetPosition(point.x, point.y, point.z);
+                var newPoint = convertKinectToProjector(new Vector3(-skeletonPoint.X, skeletonPoint.Y, skeletonPoint.Z));
+
+                this.cSceneNode.SetPosition(newPoint.x, newPoint.y, newPoint.z);
             }
             mStateMgr.Update(0);
         }
