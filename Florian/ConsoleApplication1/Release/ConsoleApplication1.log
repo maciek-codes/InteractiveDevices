@@ -1,0 +1,24 @@
+﻿Build started 12/1/2014 5:50:53 PM.
+     1>Project "C:\Users\Maciej Kumorek\Downloads\ConsoleApplication1\ConsoleApplication1\ConsoleApplication1\ConsoleApplication1.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /IC:\opencv\build\include /I"C:\Program Files (x86)\OpenNI2\Include\\" /Zi /nologo /W3 /WX- /sdl /O2 /Oi /Oy- /GL /D WIN32 /D NDEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt ConsoleApplication1.cpp
+         ConsoleApplication1.cpp
+     1>ConsoleApplication1.cpp(66): warning C4244: 'argument' : conversion from 'int' to 'float', possible loss of data
+     1>ConsoleApplication1.cpp(314): warning C4244: 'initializing' : conversion from 'float' to 'int', possible loss of data
+     1>ConsoleApplication1.cpp(316): warning C4244: 'initializing' : conversion from 'float' to 'int', possible loss of data
+     1>ConsoleApplication1.cpp(327): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>ConsoleApplication1.cpp(328): warning C4244: '=' : conversion from 'float' to 'openni::DepthPixel', possible loss of data
+     1>ConsoleApplication1.cpp(393): warning C4244: 'initializing' : conversion from 'int' to 'float', possible loss of data
+     1>ConsoleApplication1.cpp(394): warning C4244: 'initializing' : conversion from 'int' to 'float', possible loss of data
+     1>ConsoleApplication1.cpp(415): error C2664: 'double cvCalibrateCamera2(const CvMat *,const CvMat *,const CvMat *,CvSize,CvMat *,CvMat *,CvMat *,CvMat *,int,CvTermCriteria)' : cannot convert argument 1 from 'std::vector<std::vector<cv::Point3f,std::allocator<_Ty>>,std::allocator<std::vector<_Ty,std::allocator<_Ty>>>>' to 'const CvMat *'
+                 with
+                 [
+                     _Ty=cv::Point3f
+                 ]
+                 No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
+     1>ConsoleApplication1.cpp(561): warning C4244: 'argument' : conversion from 'float' to 'int', possible loss of data
+     1>Done Building Project "C:\Users\Maciej Kumorek\Downloads\ConsoleApplication1\ConsoleApplication1\ConsoleApplication1\ConsoleApplication1.vcxproj" (Build target(s)) -- FAILED.
+
+Build FAILED.
+
+Time Elapsed 00:00:02.04

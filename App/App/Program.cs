@@ -22,7 +22,10 @@ namespace Origami
         public const string OPENCV_HIGHGUI_LIBRARY = "opencv_highgui240";
         public const UnmanagedType StringMarshalType = UnmanagedType.LPStr;
         private const int CV_WINDOW_FULLSCREEN = 1;
-        
+
+
+        [DllImport(OPENCV_HIGHGUI_LIBRARY, CallingConvention = CvInvoke.CvCallingConvention, EntryPoint = "cvMoveWindow")]
+        private static extern void moveWindow([MarshalAs(StringMarshalType)] String name, int X, int y);
 
         [DllImport(OPENCV_HIGHGUI_LIBRARY, CallingConvention = CvInvoke.CvCallingConvention, EntryPoint = "cvSetWindowProperty")]
         private static extern void _cvSetWindowProperty([MarshalAs(StringMarshalType)] String name, int prop, double propvalue);
@@ -38,7 +41,7 @@ namespace Origami
         public static void cvSetWindowProperty(String name)
         {
             //return _cvSetWindowProperty(name, CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-            _cvSetWindowProperty(name, CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+            _cvSetWindowProperty(name, 0, 1);
         }
 
         //////////////////////////////////////////////////////////////////////////
@@ -86,6 +89,8 @@ namespace Origami
 
             // create main program
             var prg = new Program();
+
+           
 
             // try to initialize Ogre and the state manager
             if (mEngine.Startup() && mStateMgr.Startup(typeof(TurningHead)))
@@ -144,8 +149,12 @@ namespace Origami
 
                 CvInvoke.cvNamedWindow(KinectColorWindowName);
                 CvInvoke.cvNamedWindow(KinectDepthWindowName);
-                _cvNamedWindow(KinectThresholdWindowName, 0x00000001);
-                //cvSetWindowProperty(KinectThresholdWindowName);
+                _cvNamedWindow(KinectThresholdWindowName, 0x00000100);
+
+                moveWindow(KinectThresholdWindowName, 2161, 0);
+
+                cvSetWindowProperty(KinectThresholdWindowName);
+
                 Console.WriteLine("RET: {0}");
 
                 try
@@ -224,6 +233,7 @@ namespace Origami
 
                     var points = FindContours(trimmedthresholdImage, testWindowContent);
 
+                    // Find homography
                     lock (this.skeletonPoints)
                     {
                         this.skeletonPoints.Clear();
@@ -543,19 +553,23 @@ namespace Origami
 
             if (this.cSceneNode != null && this.skeletonPoints != null)
             {
-                var points = this.skeletonPoints.ToArray();
-
-                if (points.Any())
+                lock(this.skeletonPoints)
                 {
-                    var scenePoints = points.ToArray().
-                        Select(kinectPoint => ConvertKinectToProjector(
-                            new Vector3(-kinectPoint.X, kinectPoint.Y, kinectPoint.Z))).ToList();
+                    var points = this.skeletonPoints.ToArray();
+                
+
+                    if (points.Any())
+                    {
+                        var scenePoints = points.ToArray().
+                            Select(kinectPoint => ConvertKinectToProjector(
+                                new Vector3(-kinectPoint.X, kinectPoint.Y, kinectPoint.Z))).ToList();
 
 
-                    UpdateMeshPoints(origamiMesh, scenePoints);
+                        UpdateMeshPoints(origamiMesh, scenePoints);
 
-                    //var newPoint = ConvertKinectToProjector(new Vector3(-skeletonPoint.X, skeletonPoint.Y, skeletonPoint.Z));
-                    //this.cSceneNode.SetPosition(newPoint.x, newPoint.y, newPoint.z);
+                        //var newPoint = ConvertKinectToProjector(new Vector3(-skeletonPoint.X, skeletonPoint.Y, skeletonPoint.Z));
+                        //this.cSceneNode.SetPosition(newPoint.x, newPoint.y, newPoint.z);
+                    }
                 }
             }
 

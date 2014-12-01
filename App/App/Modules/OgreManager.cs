@@ -54,6 +54,7 @@ namespace Origami.Modules
         /// <returns></returns>
         internal bool Startup()
         {
+        
             // check if already initialized
             if (mRoot != null)
             {
@@ -81,7 +82,7 @@ namespace Origami.Modules
 
             // create windowl
             this.Window = mRoot.CreateRenderWindow(RenderWindowTitle, 1024, 768, Config.Instance.IsFullScreen, parm);
-
+            
             // create scene manager
             this.SceneMgr = mRoot.CreateSceneManager(SceneType.ST_GENERIC, "DefaultSceneManager");
 
