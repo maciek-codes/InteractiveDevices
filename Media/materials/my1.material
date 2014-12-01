@@ -4,6 +4,7 @@ material my1_mycolor
    {
       pass
       {
+         point_size  100.0
          lighting off
          texture_unit
          {

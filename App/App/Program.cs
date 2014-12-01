@@ -1,9 +1,10 @@
 ﻿using System;
-using System.Diagnostics;
+using System.Collections.Generic;
+using System.Linq;
 using Origami.Modules;
 using Origami.States;
 using Origami.Utilities;
-using k = Microsoft.Kinect;
+using Kinect = Microsoft.Kinect;
 using Mogre;
 using System.IO;
 using Emgu.CV;
@@ -11,12 +12,35 @@ using Emgu.CV.Structure;
 using Emgu.CV.CvEnum;
 using System.Drawing;
 using System.Runtime.InteropServices;
-using Rectangle = System.Drawing.Rectangle;
 
 namespace Origami
 {
     public class Program
     {
+
+        private const int CV_WND_PROP_FULLSCREEN = 0;
+        public const string OPENCV_HIGHGUI_LIBRARY = "opencv_highgui240";
+        public const UnmanagedType StringMarshalType = UnmanagedType.LPStr;
+        private const int CV_WINDOW_FULLSCREEN = 1;
+        
+
+        [DllImport(OPENCV_HIGHGUI_LIBRARY, CallingConvention = CvInvoke.CvCallingConvention, EntryPoint = "cvSetWindowProperty")]
+        private static extern void _cvSetWindowProperty([MarshalAs(StringMarshalType)] String name, int prop, double propvalue);
+
+        [DllImport(OPENCV_HIGHGUI_LIBRARY, CallingConvention = CvInvoke.CvCallingConvention, EntryPoint = "cvNamedWindow")]
+        private static extern void _cvNamedWindow([MarshalAs(StringMarshalType)] String name, int prop);
+
+        /// <summary>
+        /// Creates a window which can be used as a placeholder for images and trackbars. Created windows are reffered by their names. 
+        /// If the window with such a name already exists, the function does nothing.
+        /// </summary>
+        /// <param name="name">Name of the window which is used as window identifier and appears in the window caption</param>
+        public static void cvSetWindowProperty(String name)
+        {
+            //return _cvSetWindowProperty(name, CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+            _cvSetWindowProperty(name, CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+        }
+
         //////////////////////////////////////////////////////////////////////////
         private static OgreManager mEngine;
         private static StateManager mStateMgr;
@@ -26,24 +50,27 @@ namespace Origami
         private Light mLight2;
 
         ////** KINECT STUFF **
-        private Microsoft.Kinect.KinectSensor sensor;
-        private byte[] colorPixels;
+        private readonly Kinect.KinectSensor sensor;
+        private readonly byte[] colorPixels;
 
         /// <summary>
         /// Paper position, width and height detected by Kinect
         /// </summary>
-        private Rectangle paperRect;
         private SceneNode cSceneNode;
-        private float zPositionSquare = 0.53f;
-        private k.DepthImagePixel[] depthPixes;
-        private string kinectColorWindowName;
-        private string kinectDepthWindowName;
-        private string kinectThresholdWindowName;
-        private k.SkeletonPoint skeletonPoint;
+
+        private readonly Kinect.DepthImagePixel[] depthPixes;
+
+        private const string KinectColorWindowName = "Kinect color";
+        private const string KinectDepthWindowName = "Kinect depth";
+        private const string KinectThresholdWindowName = "Threshold window";
+
+        private Kinect.SkeletonPoint skeletonPoint;
         private Matrix4 projectionMatrix;
         private Matrix4 viewMatrix;
         private Matrix4 transformMat;
         private Matrix4 inverseTransformMat;
+        private readonly IList<Kinect.SkeletonPoint> skeletonPoints = new List<Kinect.SkeletonPoint>();
+        private ManualObject origamiMesh;
 
         /************************************************************************/
         /* program starts here                                                  */
@@ -58,7 +85,7 @@ namespace Origami
             mStateMgr = new StateManager(mEngine);
 
             // create main program
-            Program prg = new Program();
+            var prg = new Program();
 
             // try to initialize Ogre and the state manager
             if (mEngine.Startup() && mStateMgr.Startup(typeof(TurningHead)))
@@ -94,9 +121,10 @@ namespace Origami
         {
             mLight1 = null;
             mLight2 = null;
-            foreach (var potentialSensor in k.KinectSensor.KinectSensors)
+
+            foreach (var potentialSensor in Kinect.KinectSensor.KinectSensors)
             {
-                if (potentialSensor.Status == k.KinectStatus.Connected)
+                if (potentialSensor.Status == Kinect.KinectStatus.Connected)
                 {
                     this.sensor = potentialSensor;
                     break;
@@ -106,19 +134,19 @@ namespace Origami
 
             if (null != this.sensor)
             {
-                this.sensor.ColorStream.Enable(k.ColorImageFormat.RgbResolution640x480Fps30);
-                this.sensor.DepthStream.Enable(k.DepthImageFormat.Resolution640x480Fps30);
+                this.sensor.ColorStream.Enable(Kinect.ColorImageFormat.RgbResolution640x480Fps30);
+                this.sensor.DepthStream.Enable(Kinect.DepthImageFormat.Resolution640x480Fps30);
 
                 // Initialize buffer for pixels from kinect
                 this.colorPixels = new byte[this.sensor.ColorStream.FramePixelDataLength];
-                this.depthPixes = new k.DepthImagePixel[this.sensor.DepthStream.FramePixelDataLength];
+                this.depthPixes = new Kinect.DepthImagePixel[this.sensor.DepthStream.FramePixelDataLength];
                 this.sensor.AllFramesReady += sensor_AllFramesReady;
-                this.kinectColorWindowName = "Kinect color";
-                CvInvoke.cvNamedWindow(this.kinectColorWindowName);
-                this.kinectDepthWindowName = "Kinect depth";
-                CvInvoke.cvNamedWindow(this.kinectDepthWindowName);
-                kinectThresholdWindowName = "Threshold window";
-                CvInvoke.cvNamedWindow(this.kinectThresholdWindowName);
+
+                CvInvoke.cvNamedWindow(KinectColorWindowName);
+                CvInvoke.cvNamedWindow(KinectDepthWindowName);
+                _cvNamedWindow(KinectThresholdWindowName, 0x00000001);
+                //cvSetWindowProperty(KinectThresholdWindowName);
+                Console.WriteLine("RET: {0}");
 
                 try
                 {
@@ -131,7 +159,7 @@ namespace Origami
             }
         }
 
-        void sensor_AllFramesReady(object sender, Microsoft.Kinect.AllFramesReadyEventArgs e)
+        void sensor_AllFramesReady(object sender, Kinect.AllFramesReadyEventArgs e)
         {
             using (var colorFrame = e.OpenColorImageFrame())
             {
@@ -149,15 +177,15 @@ namespace Origami
                     colorFrame.CopyPixelDataTo(this.colorPixels);
                     depthFrame.CopyDepthImagePixelDataTo(this.depthPixes);
 
-                    GCHandle handle = GCHandle.Alloc(this.colorPixels, GCHandleType.Pinned);
-                    Bitmap image = new Bitmap(colorFrame.Width,
+                    var handle = GCHandle.Alloc(this.colorPixels, GCHandleType.Pinned);
+                    var image = new Bitmap(colorFrame.Width,
                         colorFrame.Height,
                         colorFrame.Width << 2, System.Drawing.Imaging.PixelFormat.Format32bppRgb,
                         handle.AddrOfPinnedObject());
                     handle.Free();
 
-                    GCHandle handle2 = GCHandle.Alloc(this.depthPixes, GCHandleType.Pinned);
-                    Bitmap image2 = new Bitmap(depthFrame.Width,
+                    var handle2 = GCHandle.Alloc(this.depthPixes, GCHandleType.Pinned);
+                    var image2 = new Bitmap(depthFrame.Width,
                         depthFrame.Height,
                         depthFrame.Width << 2, System.Drawing.Imaging.PixelFormat.Format32bppRgb,
                         handle2.AddrOfPinnedObject());
@@ -169,17 +197,17 @@ namespace Origami
                     image.Dispose();
 
                     //  Get points form depth sensor
-                    var depthImagePoints = new k.DepthImagePoint[colorFrame.Width * colorFrame.Height];
+                    var depthImagePoints = new Kinect.DepthImagePoint[colorFrame.Width * colorFrame.Height];
 
                     // Map color and depth frame from Kinect
-                    var mapper = new k.CoordinateMapper(sensor);
+                    var mapper = new Kinect.CoordinateMapper(sensor);
                     mapper.MapColorFrameToDepthFrame(colorFrame.Format, depthFrame.Format, depthPixes,
                         depthImagePoints);
 
 
                     // Get threshold value
-                    var thresholdMin = 125;
-                    var thresholdMax = 255;
+                    const int thresholdMin = 125;
+                    const int thresholdMax = 255;
 
                     // Thresholding
                     var trimmedColorImage = ExtractSubSection(colorImage);
@@ -190,50 +218,69 @@ namespace Origami
 
 
                     thresholdImage.SmoothMedian(3);
-                    var rectangle = FindContours(trimmedthresholdImage, trimmedColorImage);
 
-                    if (rectangle.HasValue)
+
+                    var testWindowContent = new Image<Bgr, byte>(trimmedColorImage.Size);
+
+                    var points = FindContours(trimmedthresholdImage, testWindowContent);
+
+                    lock (this.skeletonPoints)
                     {
-                        this.paperRect = rectangle.Value;
+                        this.skeletonPoints.Clear();
+                    }
 
-                        int x = paperRect.X + paperRect.Width;
-                        int y = paperRect.Y + paperRect.Height;
+                    //testWindowContent;
 
+               
+
+                    foreach (var point in points)
+                    {
                         // Find where the X,Y point is in the 1-D array of color frame
-                        var index = y * colorFrame.Width + x;
+                        var index = point.Y * colorFrame.Width + point.X;
 
                         // Let's choose point e.g. (x, y)
-                        trimmedColorImage.Draw(new Cross2DF(new PointF(x, y), 2.0f, 2.0f), new Bgr(Color.White), 1);
+                        trimmedColorImage.Draw(new Cross2DF(
+                            new PointF(point.X, point.Y), 2.0f, 2.0f), new Bgr(Color.Red), 5);
 
                         // Draw it on depth image
                         depthImage.Draw(new Cross2DF(
                             new PointF(depthImagePoints[index].X, depthImagePoints[index].Y),
                             2.0f, 2.0f), new Bgr(Color.White), 1);
-
-                        // Draw on color image the B-box found
-                        trimmedthresholdImage.Draw(paperRect, new Gray(0), 2);
+                        
+                        
 
                         // Get the point in skeleton space
-                        this.skeletonPoint = mapper.MapDepthPointToSkeletonPoint(depthFrame.Format,
+                        var sp = mapper.MapDepthPointToSkeletonPoint(
+                            depthFrame.Format,
                             depthImagePoints[index]);
+
+                        Console.WriteLine("Depth value is: {0}", depthImagePoints[index].Depth << Kinect.DepthImageFrame.PlayerIndexBitmaskWidth);
+
+                        lock (this.skeletonPoints)
+                        {
+
+                            this.skeletonPoints.Add(sp);
+                        }
                     }
-                    
-                    CvInvoke.cvShowImage(this.kinectColorWindowName, trimmedColorImage);
-                    CvInvoke.cvShowImage(this.kinectDepthWindowName, depthImage);
-                    CvInvoke.cvShowImage(this.kinectThresholdWindowName, trimmedthresholdImage);
+
+                    this.skeletonPoint = this.skeletonPoints.FirstOrDefault();
+
+                    CvInvoke.cvShowImage(KinectColorWindowName, trimmedColorImage);
+                    CvInvoke.cvShowImage(KinectDepthWindowName, depthImage);
+                    CvInvoke.cvShowImage(KinectThresholdWindowName, testWindowContent);
                 }
             }
         }
 
-        public Vector3 convertKinectToProjector(Vector3 kinectPoint)
+        /// <summary>
+        /// Transform kinect point from skeleton to scene space (use transform matrix)
+        /// </summary>
+        /// <param name="kinectPoint"></param>
+        /// <returns></returns>
+        public Vector3 ConvertKinectToProjector(Vector3 kinectPoint)
         {
             // Transform by transformation matrix
-            var pointTranlated = transformMat * kinectPoint;
-
-            // Print it please
-            Console.WriteLine("Transformed point X={0} Y={1} Z={2}",
-                pointTranlated.x, pointTranlated.y, pointTranlated.z);
-
+            var pointTranlated = transformMat*kinectPoint;
             return pointTranlated;
         }
 
@@ -241,39 +288,32 @@ namespace Origami
             where TColor : struct, IColor
             where TDepth : new()
         {
+            // TODO: Read from config file
             int paddingTop = 100, paddingBottom = 150;
             int paddingLeft = 125, paddingRight = 125;
 
-            Image<TColor, TDepth> maskImage = new Image<TColor, TDepth>(sourceImage.Size);
+            var maskImage = new Image<TColor, TDepth>(sourceImage.Size);
 
-
+            // Set to black
             maskImage.SetZero();
 
-            Image<TColor, TDepth> sect;
-            try
+            // Copy values to the black mask
+            for (var row = paddingTop; row < sourceImage.Height - paddingBottom; row++)
             {
-                for (int row = paddingTop; row < sourceImage.Height - paddingBottom; row++)
+                for (var col = paddingLeft; col < sourceImage.Width - paddingRight; col++)
                 {
-                    for (int col = paddingLeft; col < sourceImage.Width - paddingRight; col++)
-                    {
-                        maskImage[row, col] = sourceImage[row, col];
-                    }
+                    maskImage[row, col] = sourceImage[row, col];
                 }
-
-                //sect = sourceImage.GetSubRect(new Rectangle(paddingLeft, paddingTop,
-                //    sourceImage.Width - paddingRight,
-                //    sourceImage.Height - paddingBottom));
-            }
-            catch (Exception ex)
-            {
-                throw ex;
             }
 
             return maskImage;
         }
 
-        private static Rectangle? FindContours(Image<Gray, byte> thresholdImage, Image<Bgr, byte> coloImage)
+        private static IEnumerable<Point> FindContours(Image<Gray, byte> thresholdImage, 
+            Image<Bgr, byte> testWindowContent)
         {
+            var points = new List<Point>();
+
             using (var storage = new MemStorage())
             {
                 // Find contours
@@ -285,13 +325,14 @@ namespace Origami
                 if (contours != null)
                 {
                     var polygonPoints = contours.ApproxPoly(contours.Perimeter*0.05);
-                    coloImage.Draw(polygonPoints, new Bgr(Color.Yellow), 2);
 
-                    return contours.BoundingRectangle;
+                    testWindowContent.Draw(polygonPoints, new Bgr(Color.Yellow), 2);
+
+                    points.AddRange(polygonPoints.Select(polygonPoint => new Point(polygonPoint.X, polygonPoint.Y)));
                 }
             }
 
-            return null;
+            return points;
         }
 
 
@@ -300,15 +341,15 @@ namespace Origami
         /************************************************************************/
         public void CreateScene()
         {
-            float distanceCameraProjection = -0.18f;
-            float cameraAngelDeg = 70.0f;
-            float heightCamera = 84.0f;
+            float distanceCameraProjection = Config.Instance.CameraDistance;
+            float cameraAngelDeg = Config.Instance.CameraAngle;
+            float heightCamera = Config.Instance.CameraHeight;
 
             // set a dark ambient light
             mEngine.SceneMgr.AmbientLight = new ColourValue(0.1f, 0.1f, 0.1f);
 
             // place the camera to a better position
-            mEngine.Camera.Position = new Vector3(0.0f, 0.0f, -2.0f);
+            mEngine.Camera.Position = new Vector3(0.0f, 0.0f, -10.0f);
             mEngine.Camera.Direction = Vector3.UNIT_Z;
            
            // mEngine.Camera.LookAt(Vector3.UNIT_Z);
@@ -335,32 +376,18 @@ namespace Origami
             mLight1.Position = new Vector3(0f, 1f, 0f);
             mEngine.SceneMgr.RootSceneNode.AttachObject(mLight1);
 
-            const float paperWidth = 0.1f;
-            const float paperHeight = 0.1f;
-
-            var plane = new Plane(Vector3.UNIT_Y, 0);
-            
-            //MeshManager.Singleton.Create(,
-            //    ResourceGroupManager.DEFAULT_RESOURCE_GROUP_NAME, 
-            //    plane,
-            //    paperWidth, paperHeight, 
-            //    20, 20, true, 1, 5, 5, Vector3.UNIT_Z);
-
-            //Entity groundEnt = mEngine.SceneMgr.CreateEntity("GroundEntity", "ground");
             cSceneNode = mEngine.SceneMgr.RootSceneNode.CreateChildSceneNode();
             cSceneNode.SetPosition(0.0f, 0.0f, 0.0f);
-            cSceneNode.Scale(new Vector3(0.1f, 0.1f, 0.1f));
-            ManualObject manualObject = CreateMesh("Cube", "my1_mycolor");
-            manualObject.CastShadows = false;
-            cSceneNode.AttachObject(manualObject);
+            cSceneNode.Scale(new Vector3(1f, 1f, 1f));
+            //cSceneNode.Rotate(new Vector3(1.0f, 0.0f, 0.0f), new Radian(new Degree(40)));
 
-            //groundEnt.SetMaterialName("my1_mycolor");
+            origamiMesh = CreateMesh("Cube", "my1_mycolor");
+            origamiMesh.CastShadows = false;
+            cSceneNode.AttachObject(origamiMesh);
+
+            //groundEnt.SetMaterialName("my1_myC");
             //groundEnt.CastShadows = false;
             //cSceneNode.AttachObject(groundEnt);
-
- 
-
-
         }
 
         private void InitializeViewAndProjectionMatrices()
@@ -374,46 +401,110 @@ namespace Origami
 
             // View Matrix
             this.viewMatrix = calibrationReader.ViewMatrix;
-
         }
 
-        ManualObject CreateMesh(String name, String matName)
+        void UpdateMeshPoints(ManualObject mesh, IEnumerable<Vector3> points)
+        {
+            // Begin updating the mesh
+            mesh.BeginUpdate(0);
+
+            // Assign points
+            var sortedPoints = points.OrderBy(a => a.x).ThenBy(b => b.y).ToList();
+
+
+            //Console.WriteLine("I got {0} points", sortedPoints.Count);
+
+            foreach (var point in sortedPoints)
+            {
+                float shiftX = -0.05f;
+                float shiftY = -0.15f;
+                float shiftZ = 0;//+0.04f;
+                var pt = new Vector3(point.x + shiftX, point.y + shiftY, point.z + shiftZ);
+               
+
+                mesh.Position(pt);
+                //Console.WriteLine("\t x={0} y={1} z={2}", point.x, point.y, point.z);
+            }
+
+            //Console.WriteLine();
+
+
+            mesh.Index(0);
+            mesh.Index(1);
+            mesh.Index(3);
+            mesh.Index(2);
+            mesh.Index(0);
+
+            mesh.End();
+        }
+
+        private static int PointSorter(Vector3 a, Vector3 b)
+        {
+            //  Reference Point is Vector2.ZERO
+       
+            // Ignore Z-coord for now
+
+            // Calculate Atan
+            var aTanA = System.Math.Atan2(a.y - Vector2.ZERO.y, a.x - Vector2.ZERO.x);
+            var aTanB = System.Math.Atan2(b.y - Vector2.ZERO.y, b.x - Vector2.ZERO.x);
+
+            //  Determine next point in Clockwise rotation
+            if (aTanA < aTanB) return 1;
+            else if (aTanA > aTanB) return -1;
+
+            return 0;
+        }
+
+        ManualObject CreateMesh(string name, string matName)
         {
 
-            ManualObject cube = new ManualObject(name);
-            cube.Begin(matName);
+            var mesh = new ManualObject(name) {Dynamic = true};
 
-            cube.Position(0.5f, -0.5f, 1.0f); cube.Normal(0.408248f, -0.816497f, 0.408248f); cube.TextureCoord(1, 0);
-            cube.Position(-0.5f, -0.5f, 0.0f); cube.Normal(-0.408248f, -0.816497f, -0.408248f); cube.TextureCoord(0, 1);
-            cube.Position(0.5f, -0.5f, 0.0f); cube.Normal(0.666667f, -0.333333f, -0.666667f); cube.TextureCoord(1, 1);
-            cube.Position(-0.5f, -0.5f, 1.0f); cube.Normal(-0.666667f, -0.333333f, 0.666667f); cube.TextureCoord(0, 0);
-            cube.Position(0.5f, 0.5f, 1.0f); cube.Normal(0.666667f, 0.333333f, 0.666667f); cube.TextureCoord(1, 0);
-            cube.Position(-0.5f, -0.5f, 1.0f); cube.Normal(-0.666667f, -0.333333f, 0.666667f); cube.TextureCoord(0, 1);
-            cube.Position(0.5f, -0.5f, 1.0f); cube.Normal(0.408248f, -0.816497f, 0.408248f); cube.TextureCoord(1, 1);
-            cube.Position(-0.5f, 0.5f, 1.0f); cube.Normal(-0.408248f, 0.816497f, 0.408248f); cube.TextureCoord(0, 0);
-            cube.Position(-0.5f, 0.5f, 0.0f); cube.Normal(-0.666667f, 0.333333f, -0.666667f); cube.TextureCoord(0, 1);
-            cube.Position(-0.5f, -0.5f, 0.0f); cube.Normal(-0.408248f, -0.816497f, -0.408248f); cube.TextureCoord(1, 1);
-            cube.Position(-0.5f, -0.5f, 1.0f); cube.Normal(-0.666667f, -0.333333f, 0.666667f); cube.TextureCoord(1, 0);
-            cube.Position(0.5f, -0.5f, 0.0f); cube.Normal(0.666667f, -0.333333f, -0.666667f); cube.TextureCoord(0, 1);
-            cube.Position(0.5f, 0.5f, 0.0f); cube.Normal(0.408248f, 0.816497f, -0.408248f); cube.TextureCoord(1, 1);
-            cube.Position(0.5f, -0.5f, 1.0f); cube.Normal(0.408248f, -0.816497f, 0.408248f); cube.TextureCoord(0, 0);
-            cube.Position(0.5f, -0.5f, 0.0f); cube.Normal(0.666667f, -0.333333f, -0.666667f); cube.TextureCoord(1, 0);
-            cube.Position(-0.5f, -0.5f, 0.0f); cube.Normal(-0.408248f, -0.816497f, -0.408248f); cube.TextureCoord(0, 0);
-            cube.Position(-0.5f, 0.5f, 1.0f); cube.Normal(-0.408248f, 0.816497f, 0.408248f); cube.TextureCoord(1, 0);
-            cube.Position(0.5f, 0.5f, 0.0f); cube.Normal(0.408248f, 0.816497f, -0.408248f); cube.TextureCoord(0, 1);
-            cube.Position(-0.5f, 0.5f, 0.0f); cube.Normal(-0.666667f, 0.333333f, -0.666667f); cube.TextureCoord(1, 1);
-            cube.Position(0.5f, 0.5f, 1.0f); cube.Normal(0.666667f, 0.333333f, 0.666667f); cube.TextureCoord(0, 0);
+            //var initialPoints = new List<dynamic>
+            //{
+
+            //    new {pos = new Vector3(-0.07937469f, -0.01292092f, 0.02449267f), col = ColourValue.Green},
+            //    new {pos = new Vector3(-0.0352901f,  0.002292752f, -0.0735068f), col = ColourValue.Red},
+            //    new {pos = new Vector3(0.05551887f, -0.01208323f,  0.08107224f), col = ColourValue.Blue},
+            //    new {pos = new Vector3(0.09854966f, -4.094839E-05f,  -0.01187806f), col = ColourValue.Green},
+            //};
+
+            var initialPoints = new List<dynamic>
+            {
+
+                new {pos = new Vector3(-0.05152771f, -0.01892626f, 0.1056104f), col = ColourValue.Green},
+                new {pos = new Vector3(0.02864167f, 0.0145198f, 0.1717866f), col = ColourValue.Red},
+                new {pos = new Vector3(0.0447953f, 0.0007368922f,  -0.007466584f), col = ColourValue.Blue},
+                new {pos = new Vector3(0.122395f, -0.008235455f,  0.06258318f), col = ColourValue.Green},
+            };
+
+             // x=-0.05152771 y=-0.01892626 z=0.1056104
+             // x=0.02864167 y=-0.0245198 z=0.1717866
+             // x=0.0447953 y=0.0007368922 z=-0.007466584
+             // x=0.122395 y=-0.008235455 z=0.06258318
 
 
-            cube.Triangle(0, 1, 2); cube.Triangle(3, 1, 0);
-            cube.Triangle(4, 5, 6); cube.Triangle(4, 7, 5);
-            cube.Triangle(8, 9, 10); cube.Triangle(10, 7, 8);
-            cube.Triangle(4, 11, 12); cube.Triangle(4, 13, 11);
-            cube.Triangle(14, 8, 12); cube.Triangle(14, 15, 8);
-            cube.Triangle(16, 17, 18); cube.Triangle(16, 19, 17);
-            cube.End();
+            // OT_TRIANGLE_STRIP - 3 vertices for the first triangle and 1 per triangle after that
+            mesh.Begin(matName, RenderOperation.OperationTypes.OT_TRIANGLE_STRIP);
 
-            return cube;
+            foreach (var point in initialPoints)
+            {
+                mesh.Position(point.pos);
+                mesh.Colour(point.col);
+            }
+            mesh.Index(0);
+            mesh.Index(1);
+            mesh.Index(2);
+            mesh.Index(3);
+            mesh.Index(0);
+            
+            
+            ///,mesh.Triangle(0, 1, 2); 
+            //cube.Triangle(3, 1, 0);
+            
+            mesh.End();
+
+            return mesh;
 
         }
 
@@ -439,15 +530,35 @@ namespace Origami
         /************************************************************************/
         /* update objects in the scene                                          */
         /************************************************************************/
+
         public void UpdateScene()
         {
-            if (this.cSceneNode != null)
+            var initialPoints = new List<Vector3>
             {
+                new Vector3(-.5f, .5f, 0.324f),
+                new Vector3(-.5f, -.5f, 0.323f),
+                new Vector3(.5f, -.5f, 0.324f),
+                new Vector3(.5f, .5f, 0.322f)
+            };
 
-                var newPoint = convertKinectToProjector(new Vector3(-skeletonPoint.X, skeletonPoint.Y, skeletonPoint.Z));
+            if (this.cSceneNode != null && this.skeletonPoints != null)
+            {
+                var points = this.skeletonPoints.ToArray();
 
-                this.cSceneNode.SetPosition(newPoint.x, newPoint.y, newPoint.z);
+                if (points.Any())
+                {
+                    var scenePoints = points.ToArray().
+                        Select(kinectPoint => ConvertKinectToProjector(
+                            new Vector3(-kinectPoint.X, kinectPoint.Y, kinectPoint.Z))).ToList();
+
+
+                    UpdateMeshPoints(origamiMesh, scenePoints);
+
+                    //var newPoint = ConvertKinectToProjector(new Vector3(-skeletonPoint.X, skeletonPoint.Y, skeletonPoint.Z));
+                    //this.cSceneNode.SetPosition(newPoint.x, newPoint.y, newPoint.z);
+                }
             }
+
             mStateMgr.Update(0);
         }
 
