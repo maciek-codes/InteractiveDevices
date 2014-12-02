@@ -398,7 +398,7 @@ int main(int argc, char* argv []) {
                                     0, 0, 1);
     distCoeffs = Mat::zeros(8, 1, CV_64F);
     //double rms=calibrateCamera(objectPoints, imagePoints,
-    double rms=cvCalibrateCamera2(vvo, // object points 
+	double rms = calibrateCamera(vvo, // object points 
 								vvi, // image points
                                 projectorResolution, // image size
 								cameraMatrix, // cAMERA Mtrix

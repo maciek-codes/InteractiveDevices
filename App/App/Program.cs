@@ -426,8 +426,8 @@ namespace Origami
 
             foreach (var point in sortedPoints)
             {
-                float shiftX = -0.05f;
-                float shiftY = -0.15f;
+                float shiftX = -0.09f;
+                float shiftY = -0.14f;
                 float shiftZ = 0;//+0.04f;
                 var pt = new Vector3(point.x + shiftX, point.y + shiftY, point.z + shiftZ);
                
