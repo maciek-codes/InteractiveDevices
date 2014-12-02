@@ -74,6 +74,8 @@ namespace Origami
         private Matrix4 inverseTransformMat;
         private readonly IList<Kinect.SkeletonPoint> skeletonPoints = new List<Kinect.SkeletonPoint>();
         private ManualObject origamiMesh;
+        private Kinect.SkeletonPoint centralPoint;
+        private static Vector3 centralPointProj;
 
         /************************************************************************/
         /* program starts here                                                  */
@@ -151,9 +153,9 @@ namespace Origami
                 CvInvoke.cvNamedWindow(KinectDepthWindowName);
                 _cvNamedWindow(KinectThresholdWindowName, 0x00000100);
 
-                moveWindow(KinectThresholdWindowName, 2161, 0);
+                //moveWindow(KinectThresholdWindowName, 2161, 0);
 
-                cvSetWindowProperty(KinectThresholdWindowName);
+                //cvSetWindowProperty(KinectThresholdWindowName);
 
                 Console.WriteLine("RET: {0}");
 
@@ -231,7 +233,10 @@ namespace Origami
 
                     var testWindowContent = new Image<Bgr, byte>(trimmedColorImage.Size);
 
-                    var points = FindContours(trimmedthresholdImage, testWindowContent);
+                    var centre = new Point();
+                    var points = FindContours(trimmedthresholdImage, testWindowContent, ref centre);
+
+
 
                     // Find homography
                     lock (this.skeletonPoints)
@@ -271,13 +276,36 @@ namespace Origami
 
                             this.skeletonPoints.Add(sp);
                         }
+
+
+                    }
+
+                    // Find centre
+                    // Find where the X,Y point is in the 1-D array of color frame
+                    var cIndex = centre.Y * colorFrame.Width + centre.X;
+                    // Let's choose point e.g. (x, y)
+                    trimmedColorImage.Draw(new Cross2DF(
+                        new PointF(centre.X, centre.Y), 2.0f, 2.0f), new Bgr(Color.Red), 5);
+
+                        // Draw it on depth image
+                    if (cIndex < depthImagePoints.Count())
+                    {
+                        depthImage.Draw(new Cross2DF(
+                            new PointF(depthImagePoints[cIndex].X, depthImagePoints[cIndex].Y),
+                            2.0f, 2.0f), new Bgr(Color.White), 1);
+
+                        // Get the point in skeleton space
+
+                        this.centralPoint = mapper.MapDepthPointToSkeletonPoint(
+                            depthFrame.Format,
+                            depthImagePoints[cIndex]);
                     }
 
                     this.skeletonPoint = this.skeletonPoints.FirstOrDefault();
 
                     CvInvoke.cvShowImage(KinectColorWindowName, trimmedColorImage);
                     CvInvoke.cvShowImage(KinectDepthWindowName, depthImage);
-                    CvInvoke.cvShowImage(KinectThresholdWindowName, testWindowContent);
+                    CvInvoke.cvShowImage(KinectThresholdWindowName, trimmedthresholdImage);
                 }
             }
         }
@@ -320,7 +348,7 @@ namespace Origami
         }
 
         private static IEnumerable<Point> FindContours(Image<Gray, byte> thresholdImage, 
-            Image<Bgr, byte> testWindowContent)
+            Image<Bgr, byte> testWindowContent, ref Point centre)
         {
             var points = new List<Point>();
 
@@ -328,17 +356,39 @@ namespace Origami
             {
                 // Find contours
                 var contours = thresholdImage.FindContours(
-                    CHAIN_APPROX_METHOD.CV_CHAIN_APPROX_SIMPLE,
+                    CHAIN_APPROX_METHOD.CV_CHAIN_APPROX_NONE,
                     RETR_TYPE.CV_RETR_TREE,
                     storage);
 
                 if (contours != null)
                 {
-                    var polygonPoints = contours.ApproxPoly(contours.Perimeter*0.05);
+                    var polygonPoints = contours.ApproxPoly(12.0);
+
+                    var moments = new MCvMoments();
+                    CvInvoke.cvMoments(contours, ref moments, 1);
+
+                    try
+                    {
+                        centre = new Point((int) moments.m10/(int) moments.m00, (int) moments.m01/(int) moments.m00);
+                    }
+                    catch (DivideByZeroException)
+                    {
+                        centre = new Point(0,0);
+                    }
 
                     testWindowContent.Draw(polygonPoints, new Bgr(Color.Yellow), 2);
 
                     points.AddRange(polygonPoints.Select(polygonPoint => new Point(polygonPoint.X, polygonPoint.Y)));
+
+                    for (int i = 0; i < points.Count; i++)
+                    {
+                        Point pt = points[i];
+
+                        float dX = 0.1f * (centre.X - pt.X);
+                        float dY = 0.1f * (centre.Y - pt.Y);
+
+                        points[i] = new Point(pt.X + (int)dX, pt.Y + (int)dY);
+                    }
                 }
             }
 
@@ -420,7 +470,7 @@ namespace Origami
 
             // Assign points
             var sortedPoints = points.OrderBy(a => a.x).ThenBy(b => b.y).ToList();
-
+            //sortedPoints.Sort(PointSorter);
 
             //Console.WriteLine("I got {0} points", sortedPoints.Count);
 
@@ -433,6 +483,7 @@ namespace Origami
                
 
                 mesh.Position(pt);
+                mesh.Colour(1.0f, 0.0f, 0.0f);
                 //Console.WriteLine("\t x={0} y={1} z={2}", point.x, point.y, point.z);
             }
 
@@ -441,26 +492,31 @@ namespace Origami
 
             mesh.Index(0);
             mesh.Index(1);
-            mesh.Index(3);
             mesh.Index(2);
-            mesh.Index(0);
 
+            if (sortedPoints.Count > 3)
+            {
+                mesh.Index(3);
+
+            }
+            mesh.Index(0);
+            
             mesh.End();
         }
 
         private static int PointSorter(Vector3 a, Vector3 b)
         {
             //  Reference Point is Vector2.ZERO
-       
+        
             // Ignore Z-coord for now
 
             // Calculate Atan
-            var aTanA = System.Math.Atan2(a.y - Vector2.ZERO.y, a.x - Vector2.ZERO.x);
-            var aTanB = System.Math.Atan2(b.y - Vector2.ZERO.y, b.x - Vector2.ZERO.x);
+            var aTanA = System.Math.Atan2(a.y - centralPointProj.y, a.x - centralPointProj.x);
+            var aTanB = System.Math.Atan2(b.y - centralPointProj.y, b.x - centralPointProj.x);
 
             //  Determine next point in Clockwise rotation
-            if (aTanA < aTanB) return 1;
-            else if (aTanA > aTanB) return -1;
+            if (aTanA < aTanB) return -1;
+            else if (aTanA > aTanB) return 1;
 
             return 0;
         }
@@ -564,6 +620,7 @@ namespace Origami
                             Select(kinectPoint => ConvertKinectToProjector(
                                 new Vector3(-kinectPoint.X, kinectPoint.Y, kinectPoint.Z))).ToList();
 
+                        Program.centralPointProj = ConvertKinectToProjector(new Vector3(-this.centralPoint.X, this.centralPoint.Y, this.centralPoint.Y));
 
                         UpdateMeshPoints(origamiMesh, scenePoints);
 

@@ -4,6 +4,8 @@ material my1_mycolor
    {
       pass
       {
+         cull_hardware none
+         cull_software none
          point_size  100.0
          lighting off
          texture_unit
