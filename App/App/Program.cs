@@ -474,6 +474,10 @@ namespace Origami
 
             //Console.WriteLine("I got {0} points", sortedPoints.Count);
 
+            int[] u = {1, 0, 1, 0};
+            int[] v = {1, 1, 0, 0};
+
+            var i = 0;
             foreach (var point in sortedPoints)
             {
                 float shiftX = -0.09f;
@@ -483,7 +487,14 @@ namespace Origami
                
 
                 mesh.Position(pt);
-                mesh.Colour(1.0f, 0.0f, 0.0f);
+
+                if (i < 4)
+                {
+                    mesh.TextureCoord(u[i], v[i]);
+
+                    i++;
+                }
+                //mesh.Colour(1.0f, 0.0f, 0.0f);
                 //Console.WriteLine("\t x={0} y={1} z={2}", point.x, point.y, point.z);
             }
 
@@ -526,15 +537,6 @@ namespace Origami
 
             var mesh = new ManualObject(name) {Dynamic = true};
 
-            //var initialPoints = new List<dynamic>
-            //{
-
-            //    new {pos = new Vector3(-0.07937469f, -0.01292092f, 0.02449267f), col = ColourValue.Green},
-            //    new {pos = new Vector3(-0.0352901f,  0.002292752f, -0.0735068f), col = ColourValue.Red},
-            //    new {pos = new Vector3(0.05551887f, -0.01208323f,  0.08107224f), col = ColourValue.Blue},
-            //    new {pos = new Vector3(0.09854966f, -4.094839E-05f,  -0.01187806f), col = ColourValue.Green},
-            //};
-
             var initialPoints = new List<dynamic>
             {
 
@@ -544,20 +546,21 @@ namespace Origami
                 new {pos = new Vector3(0.122395f, -0.008235455f,  0.06258318f), col = ColourValue.Green},
             };
 
-             // x=-0.05152771 y=-0.01892626 z=0.1056104
-             // x=0.02864167 y=-0.0245198 z=0.1717866
-             // x=0.0447953 y=0.0007368922 z=-0.007466584
-             // x=0.122395 y=-0.008235455 z=0.06258318
-
-
             // OT_TRIANGLE_STRIP - 3 vertices for the first triangle and 1 per triangle after that
             mesh.Begin(matName, RenderOperation.OperationTypes.OT_TRIANGLE_STRIP);
 
-            foreach (var point in initialPoints)
-            {
-                mesh.Position(point.pos);
-                mesh.Colour(point.col);
-            }
+            mesh.Position(initialPoints[0].pos);
+            mesh.TextureCoord(1, 1);
+
+            mesh.Position(initialPoints[1].pos);
+            mesh.TextureCoord(0, 1);
+
+            mesh.Position(initialPoints[2].pos);
+            mesh.TextureCoord(1, 0);
+
+            mesh.Position(initialPoints[3].pos);
+            mesh.TextureCoord(0, 0);
+            
             mesh.Index(0);
             mesh.Index(1);
             mesh.Index(2);

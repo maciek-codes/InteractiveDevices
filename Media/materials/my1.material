@@ -6,11 +6,13 @@ material my1_mycolor
       {
          cull_hardware none
          cull_software none
-         point_size  100.0
          lighting off
+
          texture_unit
          {
-            colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+            texture Book.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
          }
       }
    }
