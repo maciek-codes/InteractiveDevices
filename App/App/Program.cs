@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Services;
+using MOIS;
 using Origami.Modules;
 using Origami.States;
 using Origami.Utilities;
@@ -12,6 +14,7 @@ using Emgu.CV.Structure;
 using Emgu.CV.CvEnum;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using Vector3 = Mogre.Vector3;
 
 namespace Origami
 {
@@ -76,6 +79,11 @@ namespace Origami
         private ManualObject origamiMesh;
         private Kinect.SkeletonPoint centralPoint;
         private static Vector3 centralPointProj;
+        private static Vector3 normal;
+
+
+        private readonly List<string> bookMaterials;
+        private int currentMaterialIndex = 0;
 
         /************************************************************************/
         /* program starts here                                                  */
@@ -91,12 +99,14 @@ namespace Origami
 
             // create main program
             var prg = new Program();
-
            
 
             // try to initialize Ogre and the state manager
             if (mEngine.Startup() && mStateMgr.Startup(typeof(TurningHead)))
             {
+                mEngine.Keyboard.KeyPressed += prg.Keyboard_KeyPressed;
+                
+                
                 // create objects in scene
                 prg.CreateScene();
 
@@ -121,11 +131,46 @@ namespace Origami
             mEngine.Shutdown();
         }
 
+        private bool Keyboard_KeyPressed(MOIS.KeyEvent arg)
+        {
+            // Key press
+            switch (arg.key)
+            {
+                case KeyCode.KC_1:
+                    this.currentMaterialIndex = 0;
+                    break;
+                case KeyCode.KC_2:
+                    currentMaterialIndex = 1;
+                    break;
+                case KeyCode.KC_3:
+                    currentMaterialIndex = 2;
+                    break;
+                case KeyCode.KC_4:
+                    currentMaterialIndex = 3;
+                    break;
+                case KeyCode.KC_5:
+                    currentMaterialIndex = 4;
+                    break;
+            }
+            
+            origamiMesh.SetMaterialName(0, this.bookMaterials[currentMaterialIndex]);
+            return true;
+        }
+
         /************************************************************************/
         /* constructor                                                          */
         /************************************************************************/
         public Program()
         {
+            bookMaterials = new List<string>
+            {
+                "book1_material",
+                "book2_material",
+                "book3_material",
+                "book4_material",
+                "book5_material"
+            };
+
             mLight1 = null;
             mLight2 = null;
 
@@ -269,8 +314,6 @@ namespace Origami
                             depthFrame.Format,
                             depthImagePoints[index]);
 
-                        Console.WriteLine("Depth value is: {0}", depthImagePoints[index].Depth << Kinect.DepthImageFrame.PlayerIndexBitmaskWidth);
-
                         lock (this.skeletonPoints)
                         {
 
@@ -328,7 +371,7 @@ namespace Origami
         {
             // TODO: Read from config file
             int paddingTop = 100, paddingBottom = 150;
-            int paddingLeft = 125, paddingRight = 125;
+            int paddingLeft = 150, paddingRight = 150;
 
             var maskImage = new Image<TColor, TDepth>(sourceImage.Size);
 
@@ -384,8 +427,8 @@ namespace Origami
                     {
                         Point pt = points[i];
 
-                        float dX = 0.1f * (centre.X - pt.X);
-                        float dY = 0.1f * (centre.Y - pt.Y);
+                        float dX = 0.2f * (centre.X - pt.X);
+                        float dY = 0.2f * (centre.Y - pt.Y);
 
                         points[i] = new Point(pt.X + (int)dX, pt.Y + (int)dY);
                     }
@@ -441,13 +484,15 @@ namespace Origami
             cSceneNode.Scale(new Vector3(1f, 1f, 1f));
             //cSceneNode.Rotate(new Vector3(1.0f, 0.0f, 0.0f), new Radian(new Degree(40)));
 
-            origamiMesh = CreateMesh("Cube", "my1_mycolor");
+            origamiMesh = CreateMesh("Cube", this.bookMaterials.First());
             origamiMesh.CastShadows = false;
             cSceneNode.AttachObject(origamiMesh);
 
             //groundEnt.SetMaterialName("my1_myC");
             //groundEnt.CastShadows = false;
             //cSceneNode.AttachObject(groundEnt);
+
+
         }
 
         private void InitializeViewAndProjectionMatrices()
@@ -469,13 +514,21 @@ namespace Origami
             mesh.BeginUpdate(0);
 
             // Assign points
-            var sortedPoints = points.OrderBy(a => a.x).ThenBy(b => b.y).ToList();
-            //sortedPoints.Sort(PointSorter);
+            var sortedPoints = points.ToList();
 
-            //Console.WriteLine("I got {0} points", sortedPoints.Count);
+            // Calculate normal
+            var threePoints = points.Take(3).ToArray();
 
-            int[] u = {1, 0, 1, 0};
-            int[] v = {1, 1, 0, 0};
+            var ba = threePoints[1] - threePoints[0];
+            var ca = threePoints[2] - threePoints[0];
+
+            var dir = ba.CrossProduct(ca);
+            Program.normal = dir.NormalisedCopy;
+
+            sortedPoints.Sort(PointSorter);
+
+            int[] u = {0, 0, 1, 1};
+            int[] v = {0, 1, 0, 1};
 
             var i = 0;
             foreach (var point in sortedPoints)
@@ -518,18 +571,18 @@ namespace Origami
         private static int PointSorter(Vector3 a, Vector3 b)
         {
             //  Reference Point is Vector2.ZERO
-        
-            // Ignore Z-coord for now
+            var cm = centralPointProj;
 
-            // Calculate Atan
-            var aTanA = System.Math.Atan2(a.y - centralPointProj.y, a.x - centralPointProj.x);
-            var aTanB = System.Math.Atan2(b.y - centralPointProj.y, b.x - centralPointProj.x);
+            var ac = a - cm;
+            var bc = b - cm;
+            var cross = ac.CrossProduct(bc);
+            var result = normal.DotProduct(cross);
 
-            //  Determine next point in Clockwise rotation
-            if (aTanA < aTanB) return -1;
-            else if (aTanA > aTanB) return 1;
-
-            return 0;
+            if (result > 0.0f)
+            {
+                return 1;
+            }
+            return -1;
         }
 
         ManualObject CreateMesh(string name, string matName)
@@ -539,18 +592,24 @@ namespace Origami
 
             var initialPoints = new List<dynamic>
             {
-
-                new {pos = new Vector3(-0.05152771f, -0.01892626f, 0.1056104f), col = ColourValue.Green},
-                new {pos = new Vector3(0.02864167f, 0.0145198f, 0.1717866f), col = ColourValue.Red},
-                new {pos = new Vector3(0.0447953f, 0.0007368922f,  -0.007466584f), col = ColourValue.Blue},
-                new {pos = new Vector3(0.122395f, -0.008235455f,  0.06258318f), col = ColourValue.Green},
+                // Low left
+                new {pos = new Vector3(-0.05864353f, -0.000508666f, 0.009420693f), col = ColourValue.Green},
+                
+                // Low right
+                new {pos = new Vector3(0.1237954f, 0.01428729f, -0.03967981f), col = ColourValue.Red},
+                
+                // Upper left
+                new {pos = new Vector3(-0.02506714f, -0.002875268f, 0.1396815f), col = ColourValue.Blue},
+                
+                // Upper right
+                new {pos = new Vector3(0.1572229f, 0.007466197f, 0.08941139f), col = ColourValue.Green},
             };
 
             // OT_TRIANGLE_STRIP - 3 vertices for the first triangle and 1 per triangle after that
             mesh.Begin(matName, RenderOperation.OperationTypes.OT_TRIANGLE_STRIP);
 
             mesh.Position(initialPoints[0].pos);
-            mesh.TextureCoord(1, 1);
+            mesh.TextureCoord(0, 0);
 
             mesh.Position(initialPoints[1].pos);
             mesh.TextureCoord(0, 1);
@@ -559,7 +618,7 @@ namespace Origami
             mesh.TextureCoord(1, 0);
 
             mesh.Position(initialPoints[3].pos);
-            mesh.TextureCoord(0, 0);
+            mesh.TextureCoord(1, 1);
             
             mesh.Index(0);
             mesh.Index(1);
@@ -602,6 +661,12 @@ namespace Origami
 
         public void UpdateScene()
         {
+            mEngine.Keyboard.Capture();
+            if (mEngine.Keyboard.IsKeyDown(KeyCode.KC_SPACE))
+            {
+                Console.Write("KEY DOWN\n");
+            }
+
             var initialPoints = new List<Vector3>
             {
                 new Vector3(-.5f, .5f, 0.324f),
@@ -617,13 +682,14 @@ namespace Origami
                     var points = this.skeletonPoints.ToArray();
                 
 
-                    if (points.Any())
+                    if (points.Any() && points.Count() >= 3)
                     {
                         var scenePoints = points.ToArray().
                             Select(kinectPoint => ConvertKinectToProjector(
                                 new Vector3(-kinectPoint.X, kinectPoint.Y, kinectPoint.Z))).ToList();
 
                         Program.centralPointProj = ConvertKinectToProjector(new Vector3(-this.centralPoint.X, this.centralPoint.Y, this.centralPoint.Y));
+
 
                         UpdateMeshPoints(origamiMesh, scenePoints);
 

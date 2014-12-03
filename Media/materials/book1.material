@@ -1,0 +1,101 @@
+material book1_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+
+         texture_unit
+         {
+            texture Book1.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+material book2_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+
+         texture_unit
+         {
+            texture Book2.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+
+material book3_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+
+         texture_unit
+         {
+            texture Book3.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+material book4_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+
+         texture_unit
+         {
+            texture Book4.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+
+material book5_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+
+         texture_unit
+         {
+            texture Book5.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}

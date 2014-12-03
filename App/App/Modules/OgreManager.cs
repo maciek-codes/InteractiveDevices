@@ -13,6 +13,8 @@ namespace Origami.Modules
         private Root mRoot;
         private Viewport mViewport;
         private ResourceManager mResourceMgr;
+        protected MOIS.InputManager inputManager;
+        protected MOIS.Keyboard mKeyboard;
 
         private const string RenderWindowTitle = "Origami";
 
@@ -20,9 +22,10 @@ namespace Origami.Modules
         /// Flag is true if rendering is currently active
         /// </summary>
         public bool RenderingActive { get; private set; }
-
         // reference to Ogre render window
         public RenderWindow Window { get; private set; }
+
+        public MOIS.Keyboard Keyboard {get { return this.mKeyboard; }}
 
         // reference to scene manager
         public SceneManager SceneMgr { get; private set; }
@@ -73,6 +76,8 @@ namespace Origami.Modules
             // register event to get notified when application lost or regained focus
             mRoot.RenderSystem.EventOccurred += OnRenderSystemEventOccurred;
 
+            mRoot.FrameStarted += mRoot_FrameStarted;
+            mRoot.FrameEnded += mRoot_FrameEnded;
             // initialize engine
             mRoot.Initialise(false);
 
@@ -103,7 +108,29 @@ namespace Origami.Modules
             // set rendering active flag
             this.RenderingActive = true;
 
+
+            IntPtr windowHnd;
+            Window.GetCustomAttribute("WINDOW", out windowHnd);
+            
+            MOIS.ParamList pl = new MOIS.ParamList();
+            pl.Insert("WINDOW", windowHnd.ToString());
+
+            inputManager = MOIS.InputManager.CreateInputSystem(pl);
+            mKeyboard = (MOIS.Keyboard)inputManager.CreateInputObject(MOIS.Type.OISKeyboard, true);
+
             // OK
+            return true;
+        }
+
+
+        bool mRoot_FrameStarted(FrameEvent evt)
+        {
+            return true;
+        }
+
+
+        bool mRoot_FrameEnded(FrameEvent evt)
+        {
             return true;
         }
 
@@ -129,6 +156,15 @@ namespace Origami.Modules
                 mRoot.Dispose();
             }
             mRoot = null;
+
+            if (inputManager != null)
+            {
+                if (mKeyboard != null)
+                {
+                    inputManager.DestroyInputObject(mKeyboard);
+                }
+                inputManager.Dispose();
+            }
 
             // forget other references to ogre systems
             this.Window = null;
