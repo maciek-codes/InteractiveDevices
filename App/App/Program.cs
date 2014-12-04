@@ -84,6 +84,7 @@ namespace Origami
 
         private readonly List<string> bookMaterials;
         private int currentMaterialIndex = 0;
+        private bool textureFlip = false;
 
         /************************************************************************/
         /* program starts here                                                  */
@@ -150,6 +151,9 @@ namespace Origami
                     break;
                 case KeyCode.KC_5:
                     currentMaterialIndex = 4;
+                    break;
+                case KeyCode.KC_F:
+                    textureFlip = !textureFlip;
                     break;
             }
             
@@ -536,13 +540,9 @@ namespace Origami
 
             sortedPoints.Sort(PointSorter);
 
-            bool orderSame = true;
-
-            var i = 0;
-
-            float shiftX = -0.09f;
-            float shiftY = -0.14f;
-            float shiftZ = 0;//+0.04f;
+            const float shiftX = -0.09f;
+            const float shiftY = -0.14f;
+            const int shiftZ = 0; //+0.04f;
 
             var text_coords = new List<tex_t>
             {
@@ -551,6 +551,13 @@ namespace Origami
                 new tex_t {u = 1, v = 0},
                 new tex_t {u = 0, v = 0},
             };
+
+            if (this.textureFlip)
+            {
+                var temp = text_coords[0];
+                text_coords[0] = text_coords[3];
+                text_coords[3] = temp;
+            }
 
             int noTriangles = sortedPoints.Count - 2;
 
