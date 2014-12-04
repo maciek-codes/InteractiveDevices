@@ -508,6 +508,12 @@ namespace Origami
             this.viewMatrix = calibrationReader.ViewMatrix;
         }
 
+        private struct tex_t
+        {
+            public int u { get; set; }
+            public int v { get; set; }
+        }
+
         void UpdateMeshPoints(ManualObject mesh, IEnumerable<Vector3> points)
         {
             // Begin updating the mesh
@@ -516,6 +522,8 @@ namespace Origami
             // Assign points
             var sortedPoints = points.ToList();
 
+            var beforeSorting = points.ToList();
+
             // Calculate normal
             var threePoints = points.Take(3).ToArray();
 
@@ -523,66 +531,151 @@ namespace Origami
             var ca = threePoints[2] - threePoints[0];
 
             var dir = ba.CrossProduct(ca);
+            dir.Normalise();
             Program.normal = dir.NormalisedCopy;
 
             sortedPoints.Sort(PointSorter);
 
-            int[] u = {0, 0, 1, 1};
-            int[] v = {0, 1, 0, 1};
+            bool orderSame = true;
 
             var i = 0;
-            foreach (var point in sortedPoints)
+
+            float shiftX = -0.09f;
+            float shiftY = -0.14f;
+            float shiftZ = 0;//+0.04f;
+
+            var text_coords = new List<tex_t>
             {
-                float shiftX = -0.09f;
-                float shiftY = -0.14f;
-                float shiftZ = 0;//+0.04f;
-                var pt = new Vector3(point.x + shiftX, point.y + shiftY, point.z + shiftZ);
-               
+                new tex_t {u = 1, v = 1},
+                new tex_t {u = 0, v = 1},
+                new tex_t {u = 1, v = 0},
+                new tex_t {u = 0, v = 0},
+            };
 
-                mesh.Position(pt);
+            int noTriangles = sortedPoints.Count - 2;
 
-                if (i < 4)
+            // Limit it for now
+            if (noTriangles > 2)
+            {
+                noTriangles = 2;
+            }
+
+            for (var t = 1; t < noTriangles + 1; t++)
+            {
+                // Odd Triangle
+                if (t%2 == 0)
                 {
-                    mesh.TextureCoord(u[i], v[i]);
+                    // Vertex 0
+                    var point = sortedPoints[t - 1];
+                    var pt = new Vector3(point.x + shiftX, point.y + shiftY, point.z + shiftZ);
 
-                    i++;
+                    mesh.Position(pt);
+                    mesh.Normal(normal);
+                    mesh.TextureCoord(text_coords[t - 1].u, text_coords[t-1].v);
+
+                    // Vertex 1
+                    point = sortedPoints[t];
+                    pt = new Vector3(point.x + shiftX, point.y + shiftY, point.z + shiftZ);
+
+                    mesh.Position(pt);
+                    mesh.Normal(normal);
+                    mesh.TextureCoord(text_coords[t].u, text_coords[t].v);
+
+                    // Vertex 2
+                    point = sortedPoints[t + 1];
+                    pt = new Vector3(point.x + shiftX, point.y + shiftY, point.z + shiftZ);
+                    mesh.Position(pt);
+                    mesh.Normal(normal);
+                    mesh.TextureCoord(text_coords[t + 1].u, text_coords[t + 1].v);
+                    
                 }
-                //mesh.Colour(1.0f, 0.0f, 0.0f);
-                //Console.WriteLine("\t x={0} y={1} z={2}", point.x, point.y, point.z);
+                    // Even triangle
+                else
+                {
+                    // Vertex 2
+                    var point = sortedPoints[t - 1];
+                    var pt = new Vector3(point.x + shiftX, point.y + shiftY, point.z + shiftZ);
+
+                    mesh.Position(pt);
+                    mesh.Normal(normal);
+                    mesh.TextureCoord(text_coords[t - 1].u, text_coords[t - 1].v);
+
+                    // Vertex 3
+                    point = sortedPoints[t + 1];
+                    pt = new Vector3(point.x + shiftX, point.y + shiftY, point.z + shiftZ);
+
+                    mesh.Position(pt);
+                    mesh.Normal(normal);
+                    mesh.TextureCoord(text_coords[t + 1].u, text_coords[t + 1].v);
+
+                    // Vertex 1
+                    point = sortedPoints[t];
+                    pt = new Vector3(point.x + shiftX, point.y + shiftY, point.z + shiftZ);
+                    mesh.Position(pt);
+                    mesh.Normal(normal);
+                    mesh.TextureCoord(text_coords[t].u, text_coords[t].v);
+                }
             }
-
-            //Console.WriteLine();
-
-
-            mesh.Index(0);
-            mesh.Index(1);
-            mesh.Index(2);
-
-            if (sortedPoints.Count > 3)
-            {
-                mesh.Index(3);
-
-            }
-            mesh.Index(0);
             
             mesh.End();
         }
 
+        private static bool IsLess(Vector3 a, Vector3 b)
+        {
+
+            if (a.x - centralPointProj.x >= 0 && b.x - centralPointProj.x < 0)
+                return true;
+            if (a.x - centralPointProj.x < 0 && b.x - centralPointProj.x >= 0)
+                return false;
+            if (a.x - centralPointProj.x == 0 && b.x - centralPointProj.x == 0)
+            {
+                if (a.y - centralPointProj.y >= 0 || b.y - centralPointProj.y >= 0)
+                    return a.y > b.y;
+                return b.y > a.y;
+            }
+
+            // compute the cross product of vectors (centralPointProj -> a) x (centralPointProj -> b)
+            var det = (a.x - centralPointProj.x) * (b.y - centralPointProj.y) - (b.x - centralPointProj.x) * (a.y - centralPointProj.y);
+            if (det < 0)
+                return true;
+            if (det > 0)
+                return false;
+
+            // points a and b are on the same line from the centralPointProj
+            // check which point is closer to the centralPointProj
+            var d1 = (a.x - centralPointProj.x) * (a.x - centralPointProj.x) + (a.y - centralPointProj.y) * (a.y - centralPointProj.y);
+            var d2 = (b.x - centralPointProj.x) * (b.x - centralPointProj.x) + (b.y - centralPointProj.y) * (b.y - centralPointProj.y);
+            return d1 > d2;
+        }
+
         private static int PointSorter(Vector3 a, Vector3 b)
         {
-            //  Reference Point is Vector2.ZERO
-            var cm = centralPointProj;
-
-            var ac = a - cm;
-            var bc = b - cm;
-            var cross = ac.CrossProduct(bc);
-            var result = normal.DotProduct(cross);
-
-            if (result > 0.0f)
+            if (IsLess(a, b))
+            {
+                return -1;
+            }
+            else
             {
                 return 1;
             }
-            return -1;
+
+            ////  Reference Point is Vector2.ZERO
+            //var cm = centralPointProj;
+
+            //var ac = a - cm;
+            //var bc = b - cm;
+            
+            //ac.Normalise();
+            //bc.Normalise();
+
+            //var cross = ac.CrossProduct(bc);
+            //var result = normal.DotProduct(cross);
+
+            //if (result > 0.0f)
+            //{
+            //    return 1;
+            //}
+            //return -1;
         }
 
         ManualObject CreateMesh(string name, string matName)
@@ -606,25 +699,37 @@ namespace Origami
             };
 
             // OT_TRIANGLE_STRIP - 3 vertices for the first triangle and 1 per triangle after that
-            mesh.Begin(matName, RenderOperation.OperationTypes.OT_TRIANGLE_STRIP);
+            mesh.Begin(matName, RenderOperation.OperationTypes.OT_TRIANGLE_LIST);
 
             mesh.Position(initialPoints[0].pos);
             mesh.TextureCoord(0, 0);
-
+            //mesh.Colour(ColourValue.Red);
+            
             mesh.Position(initialPoints[1].pos);
-            mesh.TextureCoord(0, 1);
+            mesh.TextureCoord(1, 0);
+            //mesh.Colour(ColourValue.Red);
+
 
             mesh.Position(initialPoints[2].pos);
+            mesh.TextureCoord(0, 1);
+           // mesh.Colour(ColourValue.Red);
+
+
+            mesh.Position(initialPoints[1].pos);
             mesh.TextureCoord(1, 0);
+            //mesh.Colour(ColourValue.Red);
+
 
             mesh.Position(initialPoints[3].pos);
             mesh.TextureCoord(1, 1);
-            
-            mesh.Index(0);
-            mesh.Index(1);
-            mesh.Index(2);
-            mesh.Index(3);
-            mesh.Index(0);
+           // mesh.Colour(ColourValue.Red);
+
+
+
+            mesh.Position(initialPoints[2].pos);
+            mesh.TextureCoord(0, 1);
+            //mesh.Colour(ColourValue.Red);
+
             
             
             ///,mesh.Triangle(0, 1, 2); 
