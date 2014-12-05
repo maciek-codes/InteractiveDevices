@@ -18,3 +18,23 @@ C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\lib
 C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\libs\OgreTerrain.dll
 C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\libs\OIS.dll
 C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\MOIS.dll
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\bin\Release\libs\Mogre.dll
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\bin\Release\libs\MOIS.dll
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\bin\Release\libs\OgreMain.dll
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\bin\Release\libs\OgrePaging.dll
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\bin\Release\libs\OgreRTShaderSystem.dll
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\bin\Release\libs\OgreTerrain.dll
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\bin\Release\libs\OIS.dll
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\bin\Release\Origami.Tests.dll
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\bin\Release\Origami.Tests.pdb
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\bin\Release\Mogre.dll
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\bin\Release\Origami.exe
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\bin\Release\Newtonsoft.Json.dll
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\bin\Release\MOIS.dll
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\bin\Release\Emgu.CV.dll
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\bin\Release\Emgu.Util.dll
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\bin\Release\Origami.pdb
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\bin\Release\Newtonsoft.Json.xml
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\obj\Release\Origami.Tests.csprojResolveAssemblyReference.cache
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\obj\Release\Origami.Tests.dll
+C:\Users\Derek\Documents\Bristol University\4th Year\Units\COMSM0009 - Interactive Devices\Repo\App\Origami.Tests\obj\Release\Origami.Tests.pdb
