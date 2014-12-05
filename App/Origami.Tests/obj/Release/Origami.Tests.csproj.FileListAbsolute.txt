@@ -1,0 +1,12 @@
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\Origami.Tests.dll
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\Origami.Tests.pdb
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\Mogre.dll
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\Origami.exe
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\Emgu.CV.dll
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\Emgu.Util.dll
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\Origami.pdb
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\obj\Release\Origami.Tests.csprojResolveAssemblyReference.cache
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\obj\Release\Origami.Tests.dll
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\obj\Release\Origami.Tests.pdb
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\Newtonsoft.Json.dll
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\Newtonsoft.Json.xml

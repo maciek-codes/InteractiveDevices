@@ -14,6 +14,7 @@ using Emgu.CV.Structure;
 using Emgu.CV.CvEnum;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using Math = System.Math;
 using Vector3 = Mogre.Vector3;
 
 namespace Origami
@@ -79,6 +80,7 @@ namespace Origami
         private ManualObject origamiMesh;
         private Kinect.SkeletonPoint centralPoint;
         private static Vector3 centralPointProj;
+        private Point centralPointRgb;
         private static Vector3 normal;
 
 
@@ -302,9 +304,34 @@ namespace Origami
                     var testWindowContent = new Image<Bgr, byte>(trimmedColorImage.Size);
 
                     var centre = new Point();
-                    var points = FindContours(trimmedthresholdImage, testWindowContent, ref centre);
+                    var points = FindContours(trimmedthresholdImage, testWindowContent, ref centre).ToList();
+                    this.centralPointRgb = new Point(points.Sum(p => p.X) / points.Count, points.Sum(p => p.Y) / points.Count);
 
+                    // Find centre
+                    // Find where the X,Y point is in the 1-D array of color frame
+                    var cIndex = centre.Y * colorFrame.Width + centre.X;
+                    // Let's choose point e.g. (x, y)
+                    trimmedColorImage.Draw(new Cross2DF(
+                        new PointF(centre.X, centre.Y), 2.0f, 2.0f), new Bgr(Color.Red), 5);
 
+                    // Draw it on depth image
+                    if (cIndex < depthImagePoints.Count())
+                    {
+                        depthImage.Draw(new Cross2DF(
+                            new PointF(depthImagePoints[cIndex].X, depthImagePoints[cIndex].Y),
+                            2.0f, 2.0f), new Bgr(Color.White), 1);
+
+                        // Get the point in skeleton space
+
+                        this.centralPoint = mapper.MapDepthPointToSkeletonPoint(
+                            depthFrame.Format,
+                            depthImagePoints[cIndex]);
+                    }
+
+                    // Sort points in good direction
+                    points.Sort(PointSorter);
+                    points.ForEach(p => Console.WriteLine(p));
+                    Console.WriteLine("---");
 
                     // Find homography
                     lock (this.skeletonPoints)
@@ -346,26 +373,7 @@ namespace Origami
 
                     }
 
-                    // Find centre
-                    // Find where the X,Y point is in the 1-D array of color frame
-                    var cIndex = centre.Y * colorFrame.Width + centre.X;
-                    // Let's choose point e.g. (x, y)
-                    trimmedColorImage.Draw(new Cross2DF(
-                        new PointF(centre.X, centre.Y), 2.0f, 2.0f), new Bgr(Color.Red), 5);
-
-                        // Draw it on depth image
-                    if (cIndex < depthImagePoints.Count())
-                    {
-                        depthImage.Draw(new Cross2DF(
-                            new PointF(depthImagePoints[cIndex].X, depthImagePoints[cIndex].Y),
-                            2.0f, 2.0f), new Bgr(Color.White), 1);
-
-                        // Get the point in skeleton space
-
-                        this.centralPoint = mapper.MapDepthPointToSkeletonPoint(
-                            depthFrame.Format,
-                            depthImagePoints[cIndex]);
-                    }
+                
 
                     this.skeletonPoint = this.skeletonPoints.FirstOrDefault();
 
@@ -458,6 +466,7 @@ namespace Origami
 
                         points[i] = new Point(pt.X + (int)dX, pt.Y + (int)dY);
                     }
+
                 }
             }
 
@@ -571,7 +580,7 @@ namespace Origami
             dir.Normalise();
             Program.normal = dir.NormalisedCopy;
 
-            sortedPoints.Sort(PointSorter);
+            //sortedPoints.Sort(PointSorter);
 
             var text_coords = new List<tex_t>
             {
@@ -684,16 +693,14 @@ namespace Origami
             return d1 > d2;
         }
 
-        private static int PointSorter(Vector3 a, Vector3 b)
+        private int PointSorter(Point a, Point b)
         {
-            if (IsLess(a, b))
-            {
-                return -1;
-            }
-            else
-            {
-                return 1;
-            }
+            double angle1 = Math.Atan2(a.Y - centralPointRgb.Y, a.X - centralPointRgb.X);
+            double angle2 = Math.Atan2(b.Y - centralPointRgb.Y, b.X - centralPointRgb.X);
+
+            if (angle1 < angle2) return 1;
+            else if (angle2 > angle1) return -1;
+            return 0;
 
             ////  Reference Point is Vector2.ZERO
             //var cm = centralPointProj;
