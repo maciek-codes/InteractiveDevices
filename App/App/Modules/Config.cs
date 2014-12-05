@@ -94,5 +94,7 @@ namespace Origami.Modules
                 jValue.ToObject<T>() : 
                 defaultValue;
         }
+
+        public bool IsLoaded { get { return this.configJson != null; } }
     }
 }
