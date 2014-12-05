@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using Mogre;
 
 namespace Origami.Modules
 {
@@ -16,6 +17,7 @@ namespace Origami.Modules
         private const string CameraAngleKey = "cameraAngle";
         private const string CameraHeighKey = "cameraHeigh";
         private const string CameraDistanceKey = "cameraDistance";
+        private const string PaddingKey = "roiRect";
 
         /// <summary>
         /// Configuration instance
@@ -81,6 +83,8 @@ namespace Origami.Modules
         public float CameraHeight { get { return TryGetOrDefault(CameraHeighKey, .80f); } }
 
         public float CameraDistance { get { return TryGetOrDefault(CameraDistanceKey, -.10f); } }
+        
+        public Rect Padding { get { return TryGetOrDefault(PaddingKey, new Rect(0, 0, 100, 100)); }}
 
         private T TryGetOrDefault<T>(string keyName, T defaultValue)
         {

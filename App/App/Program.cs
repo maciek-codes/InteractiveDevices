@@ -155,6 +155,19 @@ namespace Origami
                 case KeyCode.KC_F:
                     textureFlip = !textureFlip;
                     break;
+                case KeyCode.KC_LEFT:
+                    ShiftX -= 0.01f;
+                    break;
+                case KeyCode.KC_RIGHT:
+                    ShiftX += 0.01f;
+                    break;
+                case KeyCode.KC_UP:
+                    ShiftY -= 0.01f;
+                    break;
+
+                case KeyCode.KC_DOWN:
+                    ShiftY += 0.01f;
+                    break;
             }
             
             origamiMesh.SetMaterialName(0, this.bookMaterials[currentMaterialIndex]);
@@ -166,6 +179,12 @@ namespace Origami
         /************************************************************************/
         public Program()
         {
+
+            ShiftX = -0.09f;
+            ShiftY = -0.14f;
+            this.ShiftZ = 0;
+
+
             bookMaterials = new List<string>
             {
                 "book1_material",
@@ -266,7 +285,7 @@ namespace Origami
 
 
                     // Get threshold value
-                    const int thresholdMin = 125;
+                    const int thresholdMin = 140;
                     const int thresholdMax = 255;
 
                     // Thresholding
@@ -374,8 +393,11 @@ namespace Origami
             where TDepth : new()
         {
             // TODO: Read from config file
-            int paddingTop = 100, paddingBottom = 150;
-            int paddingLeft = 150, paddingRight = 150;
+            int paddingTop = Config.Instance.Padding.top;
+            int paddingBottom = Config.Instance.Padding.bottom;
+
+            int paddingLeft = Config.Instance.Padding.left;
+            int paddingRight = Config.Instance.Padding.right;
 
             var maskImage = new Image<TColor, TDepth>(sourceImage.Size);
 
@@ -431,8 +453,8 @@ namespace Origami
                     {
                         Point pt = points[i];
 
-                        float dX = 0.2f * (centre.X - pt.X);
-                        float dY = 0.2f * (centre.Y - pt.Y);
+                        float dX = 0.1f * (centre.X - pt.X);
+                        float dY = 0.1f * (centre.Y - pt.Y);
 
                         points[i] = new Point(pt.X + (int)dX, pt.Y + (int)dY);
                     }
@@ -451,6 +473,8 @@ namespace Origami
             float distanceCameraProjection = Config.Instance.CameraDistance;
             float cameraAngelDeg = Config.Instance.CameraAngle;
             float heightCamera = Config.Instance.CameraHeight;
+
+            mEngine.Window.GetViewport(0).BackgroundColour = new ColourValue(1f, 1f, 1f);
 
             // set a dark ambient light
             mEngine.SceneMgr.AmbientLight = new ColourValue(0.1f, 0.1f, 0.1f);
@@ -518,6 +542,15 @@ namespace Origami
             public int v { get; set; }
         }
 
+        float ShiftX
+        {
+            get; set;
+        }
+
+        float ShiftY { get; set; } 
+        float ShiftZ { get; set; }
+
+
         void UpdateMeshPoints(ManualObject mesh, IEnumerable<Vector3> points)
         {
             // Begin updating the mesh
@@ -539,10 +572,6 @@ namespace Origami
             Program.normal = dir.NormalisedCopy;
 
             sortedPoints.Sort(PointSorter);
-
-            const float shiftX = -0.09f;
-            const float shiftY = -0.14f;
-            const int shiftZ = 0; //+0.04f;
 
             var text_coords = new List<tex_t>
             {
@@ -574,7 +603,7 @@ namespace Origami
                 {
                     // Vertex 0
                     var point = sortedPoints[t - 1];
-                    var pt = new Vector3(point.x + shiftX, point.y + shiftY, point.z + shiftZ);
+                    var pt = new Vector3(point.x + this.ShiftX, point.y + this.ShiftY, point.z + this.ShiftZ);
 
                     mesh.Position(pt);
                     mesh.Normal(normal);
@@ -582,7 +611,7 @@ namespace Origami
 
                     // Vertex 1
                     point = sortedPoints[t];
-                    pt = new Vector3(point.x + shiftX, point.y + shiftY, point.z + shiftZ);
+                    pt = new Vector3(point.x + this.ShiftX, point.y + this.ShiftY, point.z + this.ShiftZ);
 
                     mesh.Position(pt);
                     mesh.Normal(normal);
@@ -590,7 +619,7 @@ namespace Origami
 
                     // Vertex 2
                     point = sortedPoints[t + 1];
-                    pt = new Vector3(point.x + shiftX, point.y + shiftY, point.z + shiftZ);
+                    pt = new Vector3(point.x + this.ShiftX, point.y + this.ShiftY, point.z + this.ShiftZ);
                     mesh.Position(pt);
                     mesh.Normal(normal);
                     mesh.TextureCoord(text_coords[t + 1].u, text_coords[t + 1].v);
@@ -601,7 +630,7 @@ namespace Origami
                 {
                     // Vertex 2
                     var point = sortedPoints[t - 1];
-                    var pt = new Vector3(point.x + shiftX, point.y + shiftY, point.z + shiftZ);
+                    var pt = new Vector3(point.x + this.ShiftX, point.y + this.ShiftY, point.z + this.ShiftZ);
 
                     mesh.Position(pt);
                     mesh.Normal(normal);
@@ -609,7 +638,7 @@ namespace Origami
 
                     // Vertex 3
                     point = sortedPoints[t + 1];
-                    pt = new Vector3(point.x + shiftX, point.y + shiftY, point.z + shiftZ);
+                    pt = new Vector3(point.x + this.ShiftX, point.y + this.ShiftY, point.z + this.ShiftZ);
 
                     mesh.Position(pt);
                     mesh.Normal(normal);
@@ -617,7 +646,7 @@ namespace Origami
 
                     // Vertex 1
                     point = sortedPoints[t];
-                    pt = new Vector3(point.x + shiftX, point.y + shiftY, point.z + shiftZ);
+                    pt = new Vector3(point.x + this.ShiftX, point.y + this.ShiftY, point.z + this.ShiftZ);
                     mesh.Position(pt);
                     mesh.Normal(normal);
                     mesh.TextureCoord(text_coords[t].u, text_coords[t].v);
