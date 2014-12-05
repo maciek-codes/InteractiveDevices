@@ -98,7 +98,28 @@
     <Content Include="libs\Emgu.CV.Stitching.dll" />
     <Content Include="libs\Emgu.CV.UI.dll" />
     <Content Include="libs\Emgu.Util.dll" />
+    <Content Include="libs\Mogre.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="libs\MOIS.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="libs\npp32_42_9.dll" />
+    <Content Include="libs\OgreMain.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="libs\OgrePaging.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="libs\OgreRTShaderSystem.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="libs\OgreTerrain.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="libs\OIS.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="libs\opencv_calib3d240.dll" />
     <Content Include="libs\opencv_contrib240.dll" />
     <Content Include="libs\opencv_core240.dll" />

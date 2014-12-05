@@ -10,3 +10,11 @@ C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\obj\Release\Ori
 C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\obj\Release\Origami.Tests.pdb
 C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\Newtonsoft.Json.dll
 C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\Newtonsoft.Json.xml
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\libs\Mogre.dll
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\libs\MOIS.dll
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\libs\OgreMain.dll
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\libs\OgrePaging.dll
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\libs\OgreRTShaderSystem.dll
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\libs\OgreTerrain.dll
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\libs\OIS.dll
+C:\Users\Maciej Kumorek\Dev\InteractiveDevices\App\Origami.Tests\bin\Release\MOIS.dll
