@@ -10,7 +10,7 @@ material book1_material
 
          texture_unit
          {
-            texture Book1.png
+            texture Book\Book1.png
            
             // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
          }
@@ -30,7 +30,7 @@ material book2_material
 
          texture_unit
          {
-            texture Book2.png
+            texture Book\Book2.png
            
             // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
          }
@@ -51,7 +51,7 @@ material book3_material
 
          texture_unit
          {
-            texture Book3.png
+            texture Book\Book3.png
            
             // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
          }
@@ -71,7 +71,7 @@ material book4_material
 
          texture_unit
          {
-            texture Book4.png
+            texture Book\Book4.png
            
             // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
          }
@@ -89,10 +89,423 @@ material book5_material
          cull_hardware none
          cull_software none
          lighting off
-
+         scene_blend alpha_blend
+         depth_write off
          texture_unit
          {
-            texture Book5.png
+            texture Book\Book5.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+material game1_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+         scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Game\Picture1.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+
+material game2_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+         scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Game\Picture2.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+
+material game3_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+         scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Game\Picture3.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+
+material game4_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+         scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Game\Picture4.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+
+material game5_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+         scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Game\Picture5.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+
+material shop1_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+         scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Shopping\Picture1.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+material shop2_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+         scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Shopping\Picture2.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+material shop3_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+         scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Shopping\Picture3.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+
+material shop4_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+         scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Shopping\Picture4.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+material shop5_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+         scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Shopping\Picture5.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+
+material shop6_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+         scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Shopping\Picture6.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+
+
+material browsing1_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+         scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Browsing\Picture1.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+material browsing2_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Browsing\Picture2.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+material browsing3_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Browsing\Picture3.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+
+material browsing4_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+         scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Browsing\Picture4.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+material browsing5_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+         scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Browsing\Picture5.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+material browsing6_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+         scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Browsing\Picture6.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+material browsing7_material
+{
+   technique
+   {
+      pass
+      {
+         scene_blend alpha_blend
+         depth_write off
+         cull_hardware none
+         cull_software none
+         lighting off
+         scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Browsing\Picture7.png
+           
+            // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
+         }
+      }
+   }
+}
+
+
+material browsing8_material
+{
+   technique
+   {
+      pass
+      {
+         cull_hardware none
+         cull_software none
+         lighting off
+         scene_blend alpha_blend
+         depth_write off
+         texture_unit
+         {
+            texture Browsing\Picture8.png
            
             // colour_op_ex modulate src_manual src_current 1.0 0.5 0.5
          }

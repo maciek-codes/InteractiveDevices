@@ -15,7 +15,7 @@ namespace Origami.Modules
         private const string ScreenWidthKey = "screenWidth";
         private const string ScreenHeighKey = "screenHeight";
         private const string CameraAngleKey = "cameraAngle";
-        private const string CameraHeighKey = "cameraHeigh";
+        private const string CameraHeightKey = "cameraHeight";
         private const string CameraDistanceKey = "cameraDistance";
         private const string PaddingKey = "roiRect";
 
@@ -80,7 +80,7 @@ namespace Origami.Modules
 
         public float CameraAngle { get { return TryGetOrDefault(CameraAngleKey, 70.0f); } }
 
-        public float CameraHeight { get { return TryGetOrDefault(CameraHeighKey, .80f); } }
+        public float CameraHeight { get { return TryGetOrDefault(CameraHeightKey, .80f); } }
 
         public float CameraDistance { get { return TryGetOrDefault(CameraDistanceKey, -.10f); } }
         

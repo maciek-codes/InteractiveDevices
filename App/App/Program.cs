@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Remoting.Services;
 using MOIS;
@@ -84,9 +85,13 @@ namespace Origami
         private static Vector3 normal;
 
 
-        private readonly List<string> bookMaterials;
+        private readonly List<List<String>> scenarios; 
+        
+        private int currentScenario = 0;
         private int currentMaterialIndex = 0;
         private bool textureFlip = false;
+        private Stopwatch stopWatch;
+
 
         /************************************************************************/
         /* program starts here                                                  */
@@ -136,23 +141,20 @@ namespace Origami
 
         private bool Keyboard_KeyPressed(MOIS.KeyEvent arg)
         {
+            var nextMaterial = currentMaterialIndex;
+
             // Key press
             switch (arg.key)
             {
                 case KeyCode.KC_1:
-                    this.currentMaterialIndex = 0;
+                    nextMaterial = (nextMaterial - 1);
                     break;
                 case KeyCode.KC_2:
-                    currentMaterialIndex = 1;
+                    nextMaterial = (nextMaterial + 1);
                     break;
-                case KeyCode.KC_3:
-                    currentMaterialIndex = 2;
-                    break;
-                case KeyCode.KC_4:
-                    currentMaterialIndex = 3;
-                    break;
-                case KeyCode.KC_5:
-                    currentMaterialIndex = 4;
+                case KeyCode.KC_TAB:
+                    currentScenario = (currentScenario + 1)%this.scenarios.Count;
+                    currentMaterialIndex = 0;
                     break;
                 case KeyCode.KC_F:
                     textureFlip = !textureFlip;
@@ -171,8 +173,20 @@ namespace Origami
                     ShiftY += 0.01f;
                     break;
             }
-            
-            origamiMesh.SetMaterialName(0, this.bookMaterials[currentMaterialIndex]);
+
+
+            if (nextMaterial < 0)
+            {
+                nextMaterial = 0;
+            }
+            else if (nextMaterial >= scenarios[currentScenario].Count)
+            {
+                nextMaterial = scenarios[currentScenario].Count - 1;
+            }
+
+            this.currentMaterialIndex = nextMaterial;
+
+            origamiMesh.SetMaterialName(0, this.scenarios[currentScenario][currentMaterialIndex]);
             return true;
         }
 
@@ -186,8 +200,9 @@ namespace Origami
             ShiftY = -0.14f;
             this.ShiftZ = 0;
 
+            this.scenarios = new List<List<string>>();
 
-            bookMaterials = new List<string>
+            var bookMaterials = new List<string>
             {
                 "book1_material",
                 "book2_material",
@@ -195,6 +210,44 @@ namespace Origami
                 "book4_material",
                 "book5_material"
             };
+
+            var gameMaterials = new List<string>
+            {
+                "game1_material",
+                "game2_material",
+                "game3_material",
+                "game4_material",
+                "game5_material"
+            };
+
+            var shopMaterials = new List<string>
+            {
+                "shop1_material",
+                "shop2_material",
+                "shop3_material",
+                "shop4_material",
+                "shop5_material",
+                "shop6_material"
+            };
+
+
+            var browsingMaterials = new List<string>
+            {
+                "browsing1_material",
+                "browsing2_material",
+                "browsing3_material",
+                "browsing4_material",
+                "browsing5_material",
+                "browsing6_material",
+                "browsing7_material",
+                "browsing8_material"
+            };
+
+            scenarios.Add(bookMaterials);
+            scenarios.Add(gameMaterials);
+            scenarios.Add(shopMaterials);
+            scenarios.Add(browsingMaterials);
+
 
             mLight1 = null;
             mLight2 = null;
@@ -229,6 +282,7 @@ namespace Origami
 
                 Console.WriteLine("RET: {0}");
 
+                stopWatch = Stopwatch.StartNew();
                 try
                 {
                     this.sensor.Start();
@@ -283,6 +337,18 @@ namespace Origami
         {
             if (!Config.Instance.IsLoaded)
                 return;
+
+            // Checked elapsed time
+            if (this.stopWatch.ElapsedMilliseconds > 500)
+            {
+                stopWatch.Reset();
+                stopWatch.Start();
+            }
+            else
+            {
+                return;
+            }
+
             using (var colorFrame = e.OpenColorImageFrame())
             {
                 if (colorFrame == null)
@@ -328,7 +394,7 @@ namespace Origami
 
 
                     // Get threshold value
-                    const int thresholdMin = 140;
+                    const int thresholdMin = 124;
                     const int thresholdMax = 255;
 
                     // Thresholding
@@ -345,7 +411,7 @@ namespace Origami
                     var testWindowContent = new Image<Bgr, byte>(trimmedColorImage.Size);
 
                     var centre = new Point();
-                    var points = FindContours(trimmedthresholdImage, testWindowContent, ref centre).ToList();
+                    var points = FindContours(trimmedthresholdImage, trimmedColorImage, ref centre).ToList();
                     if (points.Count == 0) return;
                     this.centralPointRgb = new Point(points.Sum(p => p.X) / points.Count, points.Sum(p => p.Y) / points.Count);
 
@@ -496,7 +562,20 @@ namespace Origami
                         centre = new Point(0,0);
                     }
 
+
                     testWindowContent.Draw(polygonPoints, new Bgr(Color.Yellow), 2);
+
+                    if (polygonPoints.Count() != 4)
+                    {
+                        var bbox = polygonPoints.BoundingRectangle;
+
+                        points.Add(new Point(bbox.X, bbox.Y));
+                        points.Add(new Point(bbox.X, bbox.Y + bbox.Height));
+                        points.Add(new Point(bbox.X + bbox.Width, bbox.Y));
+                        points.Add(new Point(bbox.X + bbox.Width, bbox.Y + bbox.Height));
+                        return points;
+                    }
+
 
                     points.AddRange(polygonPoints.Select(polygonPoint => new Point(polygonPoint.X, polygonPoint.Y)));
 
@@ -504,8 +583,8 @@ namespace Origami
                     {
                         Point pt = points[i];
 
-                        float dX = 0.1f * (centre.X - pt.X);
-                        float dY = 0.1f * (centre.Y - pt.Y);
+                        float dX = 0.01f * (centre.X - pt.X);
+                        float dY = 0.01f * (centre.Y - pt.Y);
 
                         points[i] = new Point(pt.X + (int)dX, pt.Y + (int)dY);
                     }
@@ -564,7 +643,7 @@ namespace Origami
             cSceneNode.Scale(new Vector3(1f, 1f, 1f));
             //cSceneNode.Rotate(new Vector3(1.0f, 0.0f, 0.0f), new Radian(new Degree(40)));
 
-            origamiMesh = CreateMesh("Cube", this.bookMaterials.First());
+            origamiMesh = CreateMesh("Cube", this.scenarios.First().First());
             origamiMesh.CastShadows = false;
             cSceneNode.AttachObject(origamiMesh);
 
@@ -612,27 +691,27 @@ namespace Origami
             // Begin updating the mesh
             mesh.BeginUpdate(0);
 
-            mesh.Position(points[0]);
+            mesh.Position(AdjustPoint(points[0]));
             mesh.TextureCoord(0, 0);
             //mesh.Colour(ColourValue.Red);
 
-            mesh.Position(points[1]);
+            mesh.Position(AdjustPoint(points[1]));
             mesh.TextureCoord(0, 1);
             //mesh.Colour(ColourValue.Red);
 
-            mesh.Position(points[2]);
+            mesh.Position(AdjustPoint(points[2]));
             mesh.TextureCoord(1, 1);
             // mesh.Colour(ColourValue.Red);
 
-            mesh.Position(points[0]);
+            mesh.Position(AdjustPoint(points[0]));
             mesh.TextureCoord(0, 0);
             //mesh.Colour(ColourValue.Red);
 
-            mesh.Position(points[2]);
+            mesh.Position(AdjustPoint(points[2]));
             mesh.TextureCoord(1, 1);
             // mesh.Colour(ColourValue.Red);
 
-            mesh.Position(points[3]);
+            mesh.Position(AdjustPoint(points[3]));
             mesh.TextureCoord(1, 0);
             //mesh.Colour(ColourValue.Red);
 
@@ -690,6 +769,10 @@ namespace Origami
             mesh.End();
         }
 
+        private Vector3 AdjustPoint(Vector3 point)
+        {
+            return new Vector3(point.x + this.ShiftX, point.y + this.ShiftY, point.z + this.ShiftZ);
+        }
 
 
         /*
