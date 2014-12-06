@@ -338,6 +338,11 @@ namespace Origami
             if (!Config.Instance.IsLoaded)
                 return;
 
+            if (mEngine.Keyboard != null && mEngine.Keyboard.IsKeyDown(KeyCode.KC_P))
+            {
+                return;
+            }
+
             // Checked elapsed time
             if (this.stopWatch.ElapsedMilliseconds > 500)
             {
